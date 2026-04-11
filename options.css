@@ -1,0 +1,109 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f7f9fa;
+  color: #333;
+  margin: 0;
+  padding: 40px 20px;
+}
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #1a73e8;
+}
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+}
+.section-title {
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+.description {
+  font-size: 14px;
+  color: #5f6368;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+input[type="text"]:focus {
+  border-color: #1a73e8;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: #f1f3f4;
+  color: #3c4043;
+  transition: all 0.2s;
+}
+.btn:hover {
+  background-color: #e8eaed;
+}
+.btn-primary {
+  background-color: #1a73e8;
+  color: white;
+  font-size: 15px;
+  padding: 12px 24px;
+}
+.btn-primary:hover {
+  background-color: #1557b0;
+}
+.link {
+  display: inline-block;
+  margin-left: 16px;
+  text-decoration: none;
+  color: #1a73e8;
+  font-size: 14px;
+  font-weight: 500;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.auth-status {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f4;
+}
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+.loading { background-color: #fbbc04; }
+.logged-in { background-color: #34a853; }
+.logged-out { background-color: #ea4335; }
+.msg {
+  display: none;
+  margin-top: 16px;
+  color: #1e8e3e;
+  font-size: 15px;
+  font-weight: 500;
+}

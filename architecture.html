@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Mạng Nơ-ron Hệ Thống - Snap & Translate</title>
+  <script src="vis-network.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f19; /* Dark cyberpunk background */
+      color: #e0e6ed;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden; /* Ngăn cuộn */
+    }
+
+    #mynetwork {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    .info-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 380px;
+      background: rgba(16, 22, 38, 0.9);
+      border: 1px solid #1f2d48;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,255,255,0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #00e5ff;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #a0aec0;
+    }
+
+    .neon-text {
+      color: #fff;
+      text-shadow: 0 0 5px #00e5ff, 0 0 10px #00e5ff;
+    }
+
+    #node-title { font-size: 18px; color: #fff; font-weight: 600; margin-bottom: 10px;}
+    #node-desc { font-size: 14px; color: #cbd5e0; }
+
+    .instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-size: 13px;
+      color: #4a5568;
+      pointer-events: none;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 99;
+      transition: all 0.2s;
+    }
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid #00e5ff;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #00e5ff;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="close-btn" id="close-btn">✖ Đóng lại</button>
+
+  <div class="info-panel" id="info-box">
+    <div class="title">🧠 Nơ-ron Kiến Trúc</div>
+    <div class="desc" id="default-desc">
+      Hệ thống hiện tại được biểu diễn dưới dạng <b>Mạng kết nối Nơ-ron thần kinh</b>. Mỗi điểm sáng là một khối lệnh hoặc tính năng. Các liên kết là dòng chảy dữ liệu (Synapses).<br><br>
+      <span style="color:#00e5ff">👉 <b>Tương tác:</b> Cuộn chuột để Zoom, giữ chuột để xoay kéo không gian, và BẤM VÀO TỪNG NƠ-RON để xem chi tiết thông tin bên trong.</span>
+    </div>
+    
+    <div id="dynamic-desc" style="display: none;">
+      <div id="node-title"></div>
+      <div id="node-desc"></div>
+      <div class="status-badge">Tình trạng: Hoàn hảo</div>
+    </div>
+  </div>
+
+  <div class="instructions">Sử dụng thao tác kéo thả và cuộn chuột.</div>
+
+  <div id="mynetwork"></div>
+
+  <script src="architecture.js"></script>
+</body>
+</html>

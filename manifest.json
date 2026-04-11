@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Snap & Translate (ChatGPT Vision)",
+  "version": "1.0.0",
+  "description": "Chụp vùng màn hình (snap) và tự động trích xuất, dịch văn bản chuyên ngành bằng ChatGPT Plus.",
+  "action": {
+    "default_title": "Snap & Translate"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "commands",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://chatgpt.com/*",
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://chatgpt.com/*"],
+      "js": ["chatgpt_automator.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["tesseract.min.js", "jsQR.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "snap-region": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "MacCtrl+Shift+X"
+      },
+      "description": "Kích hoạt chức năng chụp một vùng màn hình"
+    }
+  },
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content.css",
+        "worker.min.js",
+        "tesseract-core.wasm.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
