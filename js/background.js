@@ -65,9 +65,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handleTranslation(base64Image, ocrText, sendResponse) {
   try {
-    const storageData = await chrome.storage.sync.get([
-      "specialty", "autoprompt", "aiChannel", "apiUrl", "apiModel", "apiKey"
-    ]);
+    const storageData = await chrome.storage.sync.get({
+      specialty: "",
+      autoprompt: "Ngắn gọn súc tích, không giải thích thêm.",
+      aiChannel: "web",
+      apiUrl: "",
+      apiModel: "",
+      apiKey: ""
+    });
     
     const specialty = storageData.specialty || "chung";
     const customInstruction = storageData.autoprompt ? `\nCustom Rules: ${storageData.autoprompt}` : "";

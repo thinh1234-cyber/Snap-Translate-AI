@@ -55,7 +55,9 @@
       "resources": [
         "css/content.css",
         "lib/worker.min.js",
-        "lib/tesseract-core.wasm.js"
+        "lib/tesseract-core.wasm.js",
+        "lib/lang-data/eng.traineddata.gz",
+        "lib/lang-data/vie.traineddata.gz"
       ],
       "matches": [
         "<all_urls>"

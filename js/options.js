@@ -20,16 +20,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkAuthBtn = document.getElementById("check-auth-btn");
   const viewArchBtn = document.getElementById("view-arch-btn");
 
-  // Load saved option
-  chrome.storage.sync.get([
-    "specialty", "autoprompt", 
-    "useOcr", "aiChannel", "apiUrl", "apiModel", "apiKey"
-  ], (data) => {
-    if (data.specialty) specialtyInput.value = data.specialty;
-    if (data.autoprompt) autopromptInput.value = data.autoprompt;
+  // Load saved option with default values
+  chrome.storage.sync.get({
+    specialty: "",
+    autoprompt: "Ngắn gọn súc tích, không giải thích thêm.",
+    useOcr: true,
+    aiChannel: "web",
+    apiUrl: "",
+    apiModel: "",
+    apiKey: ""
+  }, (data) => {
+    specialtyInput.value = data.specialty;
+    autopromptInput.value = data.autoprompt;
     
-    ocrToggle.checked = !!data.useOcr;
-    if (data.aiChannel) channelSelect.value = data.aiChannel;
+    ocrToggle.checked = data.useOcr;
+    channelSelect.value = data.aiChannel;
     if (data.apiUrl) apiUrlInput.value = data.apiUrl;
     if (data.apiModel) apiModelInput.value = data.apiModel;
     if (data.apiKey) apiKeyInput.value = data.apiKey;

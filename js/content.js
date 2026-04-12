@@ -104,7 +104,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
   function cropImage(dataUrl, rect) {
     const img = new Image();
     img.onload = async () => {
-      chrome.storage.sync.get(["mode", "useOcr"], async (data) => {
+      chrome.storage.sync.get({mode: "normal", useOcr: true}, async (data) => {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth = rect.width * dpr;
         const canvasHeight = rect.height * dpr;
@@ -144,6 +144,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               const worker = await Tesseract.createWorker("vie+eng", 1, {
                 workerPath: chrome.runtime.getURL('lib/worker.min.js'),
                 corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
+                langPath: chrome.runtime.getURL('lib/lang-data'),
                 logger: m => {
                   if (m.status === "recognizing text") {
                     updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
