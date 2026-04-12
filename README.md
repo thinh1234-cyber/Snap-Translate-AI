@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="path/to/your/icon.png" alt="Logo" width="120">
+<img src="icon.png" alt="Logo" width="120">
 
 # 🚀 SnapTranslate & QR Master
 
@@ -22,7 +22,7 @@
 ### 1. 📸 Snap-to-Translate (AI Vision)
 * **Chụp vùng chọn:** Quét bất kỳ phần nào trên màn hình trình duyệt.
 * **Đa dạng Model:** Hỗ trợ gửi ảnh qua **ChatGPT API (GPT-4o)** hoặc kết nối với **Local AI API** (như Ollama/LocalAI) để đảm bảo quyền riêng tư.
-* **Xác thực bảo mật:** Sử dụng **OAuth 2.0** để quản lý phiên đăng nhập và bảo vệ dữ liệu người dùng.
+* **Xác thực bảo mật:** Sử dụng **OAuth** để quản lý phiên đăng nhập và bảo vệ dữ liệu người dùng.
 
 ### 2. 🔍 Smart QR Reader
 * **Giải mã tức thì:** Snap vùng chứa mã QR để đọc nội dung ngay lập tức.
@@ -36,26 +36,15 @@ Dự án được xây dựng với cấu trúc tối ưu cho Chrome Extension:
 
 * **Frontend:** `HTML5`, `CSS3` (Giao diện Popup & Overlay), `JavaScript` (DOM Manipulation).
 * **Manifest:** `v3` (Tuân thủ tiêu chuẩn mới nhất của Google).
-* **Backend & Auth:** * **OAuth:** Xử lý xác thực người dùng.
+* **Backend & Auth:**
+    * **OAuth:** Xử lý xác thực người dùng.
     * **Server-side:** Relay API để bảo mật API Key.
     * **Local Support:** Kết nối linh hoạt với Local AI API chạy trên máy cá nhân.
 
 ---
 
-## 📂 Cấu trúc Source Code
-
-```bash
-├── manifest.json         # Cấu hình extension (Permissions, Icons, Scripts)
-├── popup.html            # Giao diện điều khiển chính khi bấm vào icon
-├── css/
-│   └── style.css         # Styling cho popup và vùng chọn snap
-├── js/
-│   ├── background.js     # Xử lý các tác vụ ngầm và OAuth
-│   ├── content.js        # Script điều khiển việc chụp ảnh màn hình
-│   └── logic.js          # Xử lý gọi API ChatGPT/Local AI và QR Reader
-└── assets/               # Chứa icon và ảnh hướng dẫn
 🚀 Hướng dẫn cài đặt
-Tải mã nguồn: git clone https://github.com/yourusername/your-repo.git
+Tải mã nguồn: git clone https://github.com/thinh1234-cyber/Snap-Translate-AI.git
 
 Mở Chrome: Truy cập đường dẫn chrome://extensions/.
 
