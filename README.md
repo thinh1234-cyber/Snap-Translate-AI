@@ -71,6 +71,5 @@ Tích hợp thêm các Local LLM mới.
 Cải thiện UI/UX cho phần vùng chọn ảnh.
 
 <div align="center">
-<p>Made with ❤️ by <b>Your Name</b></p>
-<p>HCMUS - Electronics & Telecommunications</p>
+<p>Made with ❤️ by <b>Nguyễn Thịnh - Kyle</b></p>
 </div>
