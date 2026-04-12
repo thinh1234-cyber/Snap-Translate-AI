@@ -104,7 +104,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
   function cropImage(dataUrl, rect) {
     const img = new Image();
     img.onload = async () => {
-      chrome.storage.sync.get({mode: "normal", useOcr: true}, async (data) => {
+      chrome.storage.sync.get({ mode: "normal", useOcr: true, aiChannel: "web" }, async (data) => {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth = rect.width * dpr;
         const canvasHeight = rect.height * dpr;
@@ -114,11 +114,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         canvas.height = canvasHeight;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, rect.left * dpr, rect.top * dpr, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
-
-        // Lưu vào bộ nhớ toàn cục để xử lý chế độ QR siêu tốc ngay trên popup
-        window._lastSnapCanvasCtx = ctx;
-        window._lastSnapCanvasW = canvasWidth;
-        window._lastSnapCanvasH = canvasHeight;
 
         if (data.mode === "qr") {
           try {
@@ -132,45 +127,52 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           } catch (e) {
             updatePopupError("Lỗi phần mềm đọc QR: " + e.message);
           }
-        } else {
-          const croppedDataUrl = canvas.toDataURL("image/png");
-          let extractedText = null;
+          return;
+        }
 
-          if (data.useOcr) {
-            updatePopupLoadingText("Đang bóc tách chữ Offline (Tesseract)...");
-            try {
-              if (typeof Tesseract === "undefined") throw new Error("Chưa nạp được thư viện lõi Tesseract");
+        const croppedDataUrl = canvas.toDataURL("image/png");
+        let extractedText = null;
 
-              const worker = await Tesseract.createWorker("vie+eng", 1, {
-                workerPath: chrome.runtime.getURL('lib/worker.min.js'),
-                corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
-                langPath: chrome.runtime.getURL('lib/lang-data'),
-                logger: m => {
-                  if (m.status === "recognizing text") {
-                    updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
-                  } else {
-                    updatePopupLoadingText(`Đang tải lõi ngôn ngữ ...`);
-                  }
+        // --- BƯỚC 1: OCR (nếu bật) ---
+        if (data.useOcr) {
+          updatePopupLoadingText("Đang bóc tách chữ Offline (Tesseract)...");
+          try {
+            if (typeof Tesseract === "undefined") throw new Error("Chưa nạp được thư viện lõi Tesseract");
+
+            const worker = await Tesseract.createWorker("vie+eng", 1, {
+              workerPath: chrome.runtime.getURL('lib/worker.min.js'),
+              corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
+              langPath: chrome.runtime.getURL('lib/lang-data'),
+              logger: m => {
+                if (m.status === "recognizing text") {
+                  updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
+                } else {
+                  updatePopupLoadingText(`Đang tải lõi OCR...`);
                 }
-              });
-              const ret = await worker.recognize(croppedDataUrl);
-              await worker.terminate();
-              extractedText = ret.data.text.trim();
-
-              if (!extractedText) {
-                updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
-                return;
               }
-              updatePopupLoadingText("Đang gửi văn bản OCR cho AI phân tích...");
-            } catch (err) {
-              console.error(err);
-              updatePopupError("Lỗi mảng OCR: " + err.message);
+            });
+            const ret = await worker.recognize(croppedDataUrl);
+            await worker.terminate();
+            extractedText = ret.data.text.trim();
+
+            if (!extractedText) {
+              updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
               return;
             }
-          } else {
-            updatePopupLoadingText("Đang chờ AI phân tích (Vision)...");
+          } catch (err) {
+            console.error(err);
+            updatePopupError("Lỗi OCR: " + err.message);
+            return;
           }
+        }
 
+        // --- BƯỚC 2: Phân luồng theo Channel ---
+        if (data.aiChannel === "web") {
+          // WEB OAUTH: Hiện OCR text ngay + Nút "Dịch bằng ChatGPT"
+          showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
+        } else {
+          // API / LOCAL: Gửi thẳng, hiện kết quả trong popup
+          updatePopupLoadingText(extractedText ? "Đang gửi cho AI phân tích..." : "Đang chờ AI phân tích (Vision)...");
           chrome.runtime.sendMessage({
             action: "TRANSLATE_IMAGE",
             dataUrl: croppedDataUrl,
@@ -186,6 +188,149 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       });
     };
     img.src = dataUrl;
+  }
+
+  // Web OAuth mode: Hiện OCR text + nút Dịch → Embed iframe ChatGPT bên trong popup
+  function showOcrResultWithTranslateBtn(ocrText, croppedDataUrl) {
+    const content = document.getElementById("snap-translate-content");
+    if (!content) return;
+
+    const displayText = ocrText || "(Không bóc được chữ - ảnh mờ hoặc không có text)";
+    content.innerHTML = `
+      <div class="snap-translate-section">
+        <div class="snap-translate-label">VĂN BẢN TRÍCH XUẤT (OCR)</div>
+        <div class="snap-translate-text" style="white-space: pre-wrap;">${escapeHtml(displayText)}</div>
+      </div>
+      <div style="text-align:center; margin-top:12px;">
+        <button id="snap-chatgpt-translate-btn" style="
+          background: linear-gradient(135deg, #10a37f, #1a7f5a);
+          color: white; border: none; padding: 9px 20px;
+          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+          display: inline-flex; align-items: center; gap: 7px;
+          transition: 0.2s; box-shadow: 0 2px 8px rgba(16,163,127,0.35);
+        ">
+          <span>💬</span> Dịch bằng ChatGPT
+        </button>
+      </div>
+    `;
+
+    const btn = document.getElementById("snap-chatgpt-translate-btn");
+    btn.addEventListener("mouseover", () => { btn.style.opacity = "0.85"; btn.style.transform = "translateY(-1px)"; });
+    btn.addEventListener("mouseout",  () => { btn.style.opacity = "1";    btn.style.transform = "translateY(0)"; });
+
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      btn.innerHTML = "<span>⏳</span> Đang chuẩn bị...";
+
+      // Bước 1: Re-set cookies chatgpt.com → SameSite=None để iframe nhận session
+      chrome.runtime.sendMessage({ action: "PREP_CHATGPT_IFRAME" }, (res) => {
+        if (res && !res.success) {
+          // Không tìm thấy cookie → hiển thị cảnh báo nhưng vẫn thử load (user tự đăng nhập trong iframe)
+          console.warn("[SnapTranslate] Cookie prep:", res.error);
+        }
+        btn.innerHTML = "<span>⏳</span> Đang tải ChatGPT...";
+        // Bước 2: Tạo iframe (cookies đã được inject vào store)
+        embedChatGPTIframe(ocrText, croppedDataUrl, btn);
+      });
+    });
+  }
+
+  // Nhúng iframe ChatGPT vào bên trong popup OCR, thêm resize handle
+  function embedChatGPTIframe(ocrText, croppedDataUrl, btn) {
+    const popupEl = document.getElementById("snap-translate-popup");
+    if (!popupEl) return;
+
+    // Mở rộng popup để chứa iframe, cho phép resize
+    popupEl.style.width  = "420px";
+    popupEl.style.height = "auto";
+    popupEl.style.maxHeight = "none";
+    popupEl.style.overflow = "visible";
+
+    // Thêm resize handle nếu chưa có
+    if (!document.getElementById("snap-resize-handle")) {
+      const rh = document.createElement("div");
+      rh.id = "snap-resize-handle";
+      rh.style.cssText = `
+        position: absolute; bottom: 0; right: 0;
+        width: 18px; height: 18px; cursor: se-resize;
+        background: linear-gradient(135deg, transparent 50%, #ccc 50%);
+        border-radius: 0 0 8px 0;
+        z-index: 10;
+      `;
+      rh.title = "Kéo để thay đổi kích thước";
+      popupEl.appendChild(rh);
+      makeResizable(popupEl, rh);
+    }
+
+    // Tạo khung iframe nếu chưa có
+    let iframeWrap = document.getElementById("snap-chatgpt-iframe-wrap");
+    if (!iframeWrap) {
+      iframeWrap = document.createElement("div");
+      iframeWrap.id = "snap-chatgpt-iframe-wrap";
+      iframeWrap.style.cssText = `
+        margin-top: 10px;
+        border-top: 1px solid #e0e0e0;
+        border-radius: 0 0 8px 8px;
+        overflow: hidden;
+        height: 420px;
+      `;
+
+      const iframe = document.createElement("iframe");
+      iframe.id = "snap-chatgpt-iframe";
+      iframe.src = "https://chatgpt.com/";
+      iframe.allow = "clipboard-read; clipboard-write;";
+      iframe.style.cssText = "width: 100%; height: 100%; border: none; display: block;";
+
+      iframeWrap.appendChild(iframe);
+
+      const content = document.getElementById("snap-translate-content");
+      if (content) content.appendChild(iframeWrap);
+
+      // Gửi prompt khi iframe đã load xong
+      iframe.addEventListener("load", () => {
+        btn.innerHTML = "<span>✅</span> Đã gửi!";
+        // Gửi qua background, background sẽ tìm frame theo webNavigation API
+        chrome.runtime.sendMessage({
+          action: "SEND_CHATGPT_PROMPT",
+          ocrText: ocrText,
+          dataUrl: croppedDataUrl
+        });
+      });
+    } else {
+      // Reload iframe để gửi prompt mới
+      const iframe = document.getElementById("snap-chatgpt-iframe");
+      if (iframe) iframe.src = "https://chatgpt.com/";
+      btn.innerHTML = "<span>⏱</span> Đang nạp lại...";
+    }
+  }
+
+  // Resize handle cho popup
+  function makeResizable(el, handle) {
+    let startX, startY, startW, startH;
+    handle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = el.offsetWidth;
+      startH = el.offsetHeight;
+      const onMove = (em) => {
+        el.style.width  = Math.max(280, startW + em.clientX - startX) + "px";
+        el.style.height = Math.max(200, startH + em.clientY - startY) + "px";
+        // Iframe đầy chiều cao còn lại
+        const iframeWrap = document.getElementById("snap-chatgpt-iframe-wrap");
+        if (iframeWrap) {
+          const headerH = document.getElementById("snap-translate-header")?.offsetHeight || 40;
+          const contentH = document.getElementById("snap-translate-content")?.scrollHeight || 200;
+          iframeWrap.style.height = Math.max(150, el.offsetHeight - headerH - (contentH - iframeWrap.offsetHeight) - 20) + "px";
+        }
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup",   onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup",   onUp);
+    });
   }
 
   let popup;

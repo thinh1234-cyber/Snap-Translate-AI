@@ -61,7 +61,108 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleTranslation(request.dataUrl, request.ocrText, sendResponse);
     return true;
   }
+
+  if (request.action === "OPEN_CHATGPT_TRANSLATE" || request.action === "OPEN_CHATGPT_WINDOW") {
+    openChatGPTWindow(request.ocrText, request.dataUrl, request.winLeft, request.winTop, sendResponse);
+    return true;
+  }
+
+  if (request.action === "SEND_CHATGPT_PROMPT") {
+    sendPromptToIframe(request.ocrText, request.dataUrl, sender.tab.id, sendResponse);
+    return true;
+  }
+  if (request.action === "PREP_CHATGPT_IFRAME") {
+    prepChatGPTCookies(sendResponse);
+    return true;
+  }
 });
+
+// Đọc toàn bộ cookies chatgpt.com và re-set thành SameSite=None để iframe nhận được session
+async function prepChatGPTCookies(sendResponse) {
+  try {
+    const allCookies = await chrome.cookies.getAll({ domain: "chatgpt.com" });
+    const oaiCookies = await chrome.cookies.getAll({ domain: "openai.com" });
+    const cookies = [...allCookies, ...oaiCookies];
+
+    if (!cookies.length) {
+      sendResponse({ success: false, error: "Không tìm thấy cookie ChatGPT. Hãy đăng nhập chatgpt.com trước." });
+      return;
+    }
+
+    const results = await Promise.allSettled(cookies.map(c => {
+      // Xây dựng URL đúng chuẩn để set cookie
+      const scheme = c.secure ? "https" : "http";
+      const host   = c.domain.startsWith(".") ? `www${c.domain}` : c.domain;
+      const url    = `${scheme}://${host}${c.path}`;
+
+      return chrome.cookies.set({
+        url,
+        name:           c.name,
+        value:          c.value,
+        domain:         c.domain,
+        path:           c.path,
+        secure:         true,           // SameSite=None phải có Secure
+        httpOnly:       c.httpOnly,
+        sameSite:       "no_restriction", // SameSite=None → được gửi trong iframe cross-origin
+        expirationDate: c.expirationDate,
+        storeId:        c.storeId
+      });
+    }));
+
+    const succeeded = results.filter(r => r.status === "fulfilled").length;
+    console.log(`[SnapTranslate] Re-set ${succeeded}/${cookies.length} cookies → SameSite=None`);
+    sendResponse({ success: true, count: succeeded });
+  } catch(err) {
+    sendResponse({ success: false, error: err.message });
+  }
+}
+
+
+async function sendPromptToIframe(ocrText, dataUrl, senderTabId, sendResponse) {
+  try {
+    const storageData = await chrome.storage.sync.get({
+      specialty: "chung",
+      autoprompt: "Ngắn gọn súc tích, không giải thích thêm."
+    });
+    const specialty   = storageData.specialty || "chung";
+    const customRule  = storageData.autoprompt ? `\nCustom Rules: ${storageData.autoprompt}` : "";
+    const promptText  = `Dịch đoạn văn bản chuyên ngành (${specialty}) sau sang tiếng Việt.${customRule}\n\n[BẢN GỐC]:\n${ocrText}`;
+
+    // Chờ React mount trong iframe (iframe.onload chỉ báo HTML done, chưa phải React done)
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Tìm frame chatgpt.com trong tab người dùng (retry tối đa 3 lần × 2s)
+    let chatgptFrame = null;
+    for (let attempt = 0; attempt < 3 && !chatgptFrame; attempt++) {
+      const frames = await chrome.webNavigation.getAllFrames({ tabId: senderTabId });
+      chatgptFrame  = frames?.find(f => f.url && f.url.includes("chatgpt.com") && f.frameId !== 0);
+      if (!chatgptFrame) await new Promise(r => setTimeout(r, 2000));
+    }
+
+    if (!chatgptFrame) {
+      if (sendResponse) sendResponse({ success: false, error: "Không tìm thấy iframe ChatGPT trong trang. Đảm bảo đã nhấn nút Dịch." });
+      return;
+    }
+
+    // KHÔNG inject lại — all_frames:true đã làm điều này tại document_start
+    // Chỉ gửi message thẳng vào đúng frame
+    chrome.tabs.sendMessage(
+      senderTabId,
+      { action: "PROCESS_TEXT", prompt: promptText },
+      { frameId: chatgptFrame.frameId },
+      (res) => {
+        if (chrome.runtime.lastError) {
+          console.warn("[SnapTranslate] Frame msg error:", chrome.runtime.lastError.message);
+        }
+      }
+    );
+
+    if (sendResponse) sendResponse({ success: true });
+  } catch(err) {
+    if (sendResponse) sendResponse({ success: false, error: err.message });
+  }
+}
+
 
 async function handleTranslation(base64Image, ocrText, sendResponse) {
   try {
@@ -169,38 +270,32 @@ async function translateViaWebAuth(base64Image, ocrText, promptText, sendRespons
     // Lấy TẤT CẢ các tab trùng url trên TẤT CẢ window
     const tabs = await chrome.tabs.query({ url: "*://chatgpt.com/*" });
     
-    // Ưu tiên tìm Tab ChatGPT đang nằm trong cửa sổ thu nhỏ (Cửa sổ rác chạy ngầm của extension)
-    let botTab = null;
-    for (let t of tabs) {
-      const win = await chrome.windows.get(t.windowId);
-      if (win.state === "minimized" || win.type === "popup") {
-        botTab = t;
-        break;
-      }
+    // Ưu tiên tìm Tab ChatGPT ở dạng ghim (Pinned) chạy ngầm
+    let botTab = tabs.find(t => t.pinned);
+
+    // Nếu không có, lấy đại thẻ ChatGPT bất kỳ đang mở
+    if (!botTab && tabs.length > 0) {
+      botTab = tabs[0];
     }
 
-    // Nếu không có cửa sổ ngầm, lấy đại tab ChatGPT đang mở, nếu không có thì tạo cửa sổ ngầm mới.
     if (botTab) {
       targetTabId = botTab.id;
       if (botTab.discarded) {
         await chrome.tabs.reload(targetTabId);
         await new Promise(r => setTimeout(r, 2000));
       }
-    } else if (tabs.length > 0) {
-      targetTabId = tabs[0].id;
-      if (tabs[0].discarded) {
-         await chrome.tabs.reload(targetTabId);
-         await new Promise(r => setTimeout(r, 2000));
-      }
     } else {
       isNewTab = true;
-      // Trọng tâm: Tạo cửa sổ mới thu nhỏ hoàn toàn (chạy nền) thay vì tab ghim
-      const newWin = await chrome.windows.create({ 
+      // Trọng tâm giải quyết: Pinned Tab hoạt động ngầm (Chống Sleep qua autoDiscardable)
+      const newTab = await chrome.tabs.create({ 
         url: "https://chatgpt.com/", 
-        type: "popup", 
-        state: "minimized" 
+        active: false,
+        pinned: true
       });
-      targetTabId = newWin.tabs[0].id;
+      targetTabId = newTab.id;
+      
+      // Khóa tab này để hệ điều hành không bao giờ ép nó ngủ (Suspend/Hibernate)
+      await chrome.tabs.update(targetTabId, { autoDiscardable: false });
       
       await new Promise((resolve) => {
         chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
@@ -261,5 +356,103 @@ async function translateViaWebAuth(base64Image, ocrText, promptText, sendRespons
     }
   } catch (err) {
       sendResponse({ success: false, error: err.message });
+  }
+}
+
+// Mở/tái dùng cửa sổ popup ChatGPT nhỏ, auto-gửi prompt ngay
+async function openChatGPTWindow(ocrText, dataUrl, winLeft, winTop, sendResponse) {
+  try {
+    const storageData = await chrome.storage.sync.get({
+      specialty: "chung",
+      autoprompt: "Ngắn gọn súc tích, không giải thích thêm."
+    });
+
+    const specialty = storageData.specialty || "chung";
+    const customRule = storageData.autoprompt ? `\nCustom Rules: ${storageData.autoprompt}` : "";
+    const promptText = `Dịch đoạn văn bản chuyên ngành (${specialty}) sau sang tiếng Việt.${customRule}\n\n[BẢN GỐC]:\n${ocrText}`;
+
+    const WIN_W = 480;
+    const WIN_H = 540;
+
+    // Ghi lại cửa sổ đang active để trả focus sau
+    const [currentWindow] = await chrome.windows.getAll({ populate: false })
+      .then(wins => wins.filter(w => w.focused));
+    const originalWinId = currentWindow?.id;
+
+    // Tìm cửa sổ popup ChatGPT nhỏ đã tạo trước đó (tái sử dụng)
+    let targetTabId = null;
+    let targetWinId = null;
+    const existingTabs = await chrome.tabs.query({ url: "*://chatgpt.com/*" });
+    for (const t of existingTabs) {
+      const win = await chrome.windows.get(t.windowId);
+      if (win.type === "popup" && win.width <= 600) {
+        targetTabId = t.id;
+        targetWinId = t.windowId;
+        break;
+      }
+    }
+
+    if (targetWinId) {
+      // Di chuyển cửa sổ cũ đến đúng vị trí và đưa lên trước
+      await chrome.windows.update(targetWinId, {
+        left: winLeft || 20,
+        top:  winTop  || 100,
+        focused: true // focus để React không bị throttle
+      });
+    } else {
+      // Tạo cửa sổ popup mới — PHẢI focused: true để ChatGPT load đúng
+      const newWin = await chrome.windows.create({
+        url:    "https://chatgpt.com/",
+        type:   "popup",
+        width:  WIN_W,
+        height: WIN_H,
+        left:   winLeft || 20,
+        top:    winTop  || 100,
+        focused: true  // Cần thiết để React mount & render đầy đủ
+      });
+      targetTabId = newWin.tabs[0].id;
+      targetWinId = newWin.id;
+
+      // Chờ ChatGPT load + React mount xong
+      await new Promise((resolve) => {
+        chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+          if (tabId === targetTabId && info.status === "complete") {
+            chrome.tabs.onUpdated.removeListener(listener);
+            setTimeout(resolve, 2500); // React cần ~2s để mount giao diện
+          }
+        });
+      });
+    }
+
+    // Trả focus về cửa sổ gốc ngay — người dùng không bị mất focus lâu
+    if (originalWinId) {
+      await chrome.windows.update(originalWinId, { focused: true });
+    }
+
+    // Cắm automator vào cửa sổ ChatGPT
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: targetTabId },
+        files: ["js/chatgpt_automator.js"]
+      });
+    } catch(e) { /* Đã inject — OK */ }
+
+    await new Promise(r => setTimeout(r, 500));
+
+    // Báo content.js ngay: cửa sổ đã sẵn sàng
+    sendResponse({ success: true });
+
+    // Gửi prompt vào nền — ChatGPT sẽ tự gõ và trả lời trong cửa sổ popup
+    chrome.tabs.sendMessage(targetTabId, {
+      action: "PROCESS_TEXT",
+      prompt: promptText
+    }, (res) => {
+      if (chrome.runtime.lastError) {
+        console.warn("[SnapTranslate] ChatGPT window msg error:", chrome.runtime.lastError.message);
+      }
+    });
+
+  } catch (err) {
+    sendResponse({ success: false, error: err.message });
   }
 }

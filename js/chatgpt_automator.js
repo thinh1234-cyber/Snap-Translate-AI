@@ -1,5 +1,9 @@
-// --- Advanced DOM Automator for ChatGPT (Extreme Optimization) ---
-// This script runs on chatgpt.com
+// --- Advanced DOM Automator for ChatGPT ---
+// Guard: Chống inject trùng lặp (all_frames + executeScript đều gọi nó)
+if (window.__snapChatGPTAutomatorLoaded) {
+  // Đã chạy rồi, bỏ qua
+} else {
+window.__snapChatGPTAutomatorLoaded = true;
 
 let isAutomating = false; // Khóa Mutex chống dẫm luồng
 
@@ -46,31 +50,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function executeAutomation(base64Data, promptText) {
   // 1. Chờ khung chat xuất hiện (Dùng setInterval siêu nhẹ 300ms thay vì MutationObserver)
-  const textArea = await waitForElementLightweight('#prompt-textarea', 10000);
+  const textArea = await waitForElementLightweight('#prompt-textarea', 15000);
   if (!textArea) throw new Error("Không tìm thấy khung chat trên trang ChatGPT.");
 
-  // 2. Nạp dữ liệu giả lập lệnh Paste
-  const dataTransfer = new DataTransfer();
-  dataTransfer.setData("text/plain", promptText);
+  // CHỜ QUAN TRỌNG: Đợi thêm 1s sau khi DOM xuất hiện để React bind xong sự kiện onPaste.
+  // Nếu gửi event ngay lập tức, React có thể bỏ qua lệnh Paste khiến hệ thống bị treo chờ nút Gửi.
+  await new Promise(r => setTimeout(r, 1000));
 
-  // Nếu có ảnh (Vision Mode) thì mới gắn file ảnh vào clipboard
-  if (base64Data) {
-    const blob = await (await fetch(base64Data)).blob();
-    const file = new File([blob], "snap-image.png", { type: "image/png" });
-    dataTransfer.items.add(file);
+  // 2. Chèn chữ (bỏ qua mô phỏng Paste event vì ProseMirror kiểm tra event.isTrusted)
+  textArea.focus();
+  const textInserted = document.execCommand('insertText', false, promptText);
+  if (!textInserted) {
+    // Fallback nếu execCommand bị chặn
+    textArea.innerText = promptText;
+    textArea.dispatchEvent(new Event('input', { bubbles: true }));
   }
-  
-  const pasteEvent = new ClipboardEvent('paste', {
-    clipboardData: dataTransfer,
-    bubbles: true,
-    cancelable: true
-  });
-  textArea.dispatchEvent(pasteEvent);
 
-  // 3. Đợi nút Gửi có thể bấm được (Chờ tải ảnh)
-  let sendBtn = await waitForSendButtonActive(10000);
+  // 3. Nếu có ảnh, đưa trực tiếp vào thẻ <input type="file">
+  if (base64Data) {
+    try {
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) {
+        const blob = await (await fetch(base64Data)).blob();
+        const file = new File([blob], "snap-image.png", { type: "image/png" });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        
+        // Gán file vào input HTML và bắn sự kiện thay đổi
+        fileInput.files = dt.files;
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        console.warn("[SnapTranslate] Không tìm thấy nút đính kèm ảnh trên giao diện ChatGPT.");
+      }
+    } catch (e) {
+      console.error("[SnapTranslate] Lỗi gửi file ảnh:", e);
+    }
+  }
+
+  // 4. Đợi nút Gửi có thể bấm được (Chờ tải ảnh)
+  let sendBtn = await waitForSendButtonActive(15000);
   if (!sendBtn) {
-    throw new Error("Quá thời gian: Nút gửi bị khóa vì quá trình nạp ảnh gặp lỗi mạng.");
+    throw new Error("Quá thời gian: Nút gửi bị khóa vì quá trình nạp dữ liệu (ảnh/text) chưa hoàn tất.");
   }
   
   // 4. Lấy số lượng thẻ chat ban đầu
@@ -186,3 +206,5 @@ function observeResponseLifecycle(initialCount, MSG_SELECTOR) {
     }, 90000);
   });
 }
+
+} // END guard: window.__snapChatGPTAutomatorLoaded
