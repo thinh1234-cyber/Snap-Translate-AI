@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icon.png" alt="Logo" width="120">
+<img src="/assets/icon.png" alt="Logo" width="120">
 
 # 🚀 SnapTranslate & QR Master
 
