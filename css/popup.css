@@ -1,0 +1,130 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: #202124;
+  width: 320px;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: linear-gradient(135deg, #1a73e8, #0f9d58);
+  padding: 20px 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: white;
+  padding: 2px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.title-box h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.title-box .subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.action-grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.main-action-btn {
+  grid-column: span 2;
+  background-color: #1a73e8;
+  color: white;
+  padding: 16px;
+}
+
+.main-action-btn:hover {
+  background-color: #1557b0;
+}
+
+.main-action-btn .icon {
+  font-size: 28px;
+}
+
+.main-action-btn .text {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.main-action-btn small {
+  font-size: 11px;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+.secondary-btn {
+  background-color: #ffffff;
+  color: #3c4043;
+  padding: 12px;
+  border: 1px solid #dadce0;
+}
+
+.secondary-btn:hover {
+  background-color: #f1f3f4;
+}
+
+.secondary-btn .icon {
+  font-size: 20px;
+}
+
+.secondary-btn .text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.footer {
+  text-align: center;
+  padding: 12px;
+  background: #e8eaed;
+  font-size: 11px;
+  color: #5f6368;
+  border-top: 1px solid #dadce0;
+}

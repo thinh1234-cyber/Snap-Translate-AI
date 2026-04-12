@@ -19,18 +19,18 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
     overlay = document.createElement("div");
     overlay.id = "snap-translate-overlay";
-    
+
     selectionBox = document.createElement("div");
     selectionBox.id = "snap-translate-selection";
     selectionBox.style.display = "none";
-    
+
     overlay.appendChild(selectionBox);
     container.appendChild(overlay);
 
     overlay.addEventListener("mousedown", onMouseDown);
     overlay.addEventListener("mousemove", onMouseMove);
     overlay.addEventListener("mouseup", onMouseUp);
-    
+
     document.addEventListener("keydown", onKeyDown);
   }
 
@@ -108,12 +108,17 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth = rect.width * dpr;
         const canvasHeight = rect.height * dpr;
-        
+
         const canvas = document.createElement("canvas");
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, rect.left * dpr, rect.top * dpr, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
+
+        // Lưu vào bộ nhớ toàn cục để xử lý chế độ QR siêu tốc ngay trên popup
+        window._lastSnapCanvasCtx = ctx;
+        window._lastSnapCanvasW = canvasWidth;
+        window._lastSnapCanvasH = canvasHeight;
 
         if (data.mode === "qr") {
           try {
@@ -137,23 +142,23 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               if (typeof Tesseract === "undefined") throw new Error("Chưa nạp được thư viện lõi Tesseract");
 
               const worker = await Tesseract.createWorker("vie+eng", 1, {
-                workerPath: chrome.runtime.getURL('worker.min.js'),
-                corePath: chrome.runtime.getURL('tesseract-core.wasm.js'),
+                workerPath: chrome.runtime.getURL('lib/worker.min.js'),
+                corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
                 logger: m => {
-                   if (m.status === "recognizing text") {
-                      updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
-                   } else {
-                      updatePopupLoadingText(`Đang tải lõi ngôn ngữ ...`);
-                   }
+                  if (m.status === "recognizing text") {
+                    updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
+                  } else {
+                    updatePopupLoadingText(`Đang tải lõi ngôn ngữ ...`);
+                  }
                 }
               });
               const ret = await worker.recognize(croppedDataUrl);
               await worker.terminate();
               extractedText = ret.data.text.trim();
-              
+
               if (!extractedText) {
-                 updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
-                 return;
+                updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
+                return;
               }
               updatePopupLoadingText("Đang gửi văn bản OCR cho AI phân tích...");
             } catch (err) {
@@ -165,10 +170,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
             updatePopupLoadingText("Đang chờ AI phân tích (Vision)...");
           }
 
-          chrome.runtime.sendMessage({ 
-            action: "TRANSLATE_IMAGE", 
-            dataUrl: croppedDataUrl, 
-            ocrText: extractedText 
+          chrome.runtime.sendMessage({
+            action: "TRANSLATE_IMAGE",
+            dataUrl: croppedDataUrl,
+            ocrText: extractedText
           }, (res) => {
             if (res && res.success) {
               updatePopupResult(extractedText ? `(OCR Text)\n${extractedText}` : "", res.translation);
@@ -182,26 +187,28 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     img.src = dataUrl;
   }
 
-  // --- POPUP UI ---
   let popup;
 
   function createPopupContainer() {
     if (document.getElementById("snap-translate-popup")) {
       document.getElementById("snap-translate-popup").remove();
     }
-    
+
     const container = document.fullscreenElement || document.body;
 
     popup = document.createElement("div");
     popup.id = "snap-translate-popup";
-    
+
     const header = document.createElement("div");
     header.id = "snap-translate-header";
     header.innerHTML = `
-      <span>Snap & Translate</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="snap-settings-btn" title="Mở trang Cài đặt" style="cursor:pointer; opacity:0.8; font-size:18px; transition:0.2s;"> ⚙ </span>
+        <span>Snap & Translate</span>
+      </div>
       <button id="snap-translate-close">&times;</button>
     `;
-    
+
     const content = document.createElement("div");
     content.id = "snap-translate-content";
 
@@ -212,6 +219,12 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     document.getElementById("snap-translate-close").addEventListener("click", () => {
       popup.remove();
     });
+
+    document.getElementById("snap-settings-btn").addEventListener("click", () => {
+      chrome.runtime.sendMessage({ action: "OPEN_OPTIONS" });
+    });
+    document.getElementById("snap-settings-btn").addEventListener("mouseover", (e) => e.target.style.opacity = "1");
+    document.getElementById("snap-settings-btn").addEventListener("mouseout", (e) => e.target.style.opacity = "0.8");
 
     makeDraggable(popup, header);
   }
@@ -224,7 +237,30 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         <div class="snap-spinner"></div>
         <span id="snap-loading-text">Đang chuẩn bị...</span>
       </div>
+      <div style="text-align: center; margin-top: 15px;">
+        <button id="snap-cancel-btn" style="background:#d93025; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; transition:0.2s;">✖ Hủy tiến trình</button>
+      </div>
     `;
+
+    document.getElementById("snap-cancel-btn").addEventListener("mouseover", (e) => e.target.style.background = "#c5221f");
+    document.getElementById("snap-cancel-btn").addEventListener("mouseout", (e) => e.target.style.background = "#d93025");
+
+    document.getElementById("snap-cancel-btn").addEventListener("click", () => {
+      if (document.getElementById("snap-translate-popup")) {
+        // Hiệu ứng notification Hủy Tiền Trình
+        content.innerHTML = `
+           <div style="display:flex; flex-direction:column; align-items:center; padding:15px 0;">
+             <div style="color:#d93025; font-size:24px; margin-bottom:8px;">⛔</div>
+             <div style="color:#d93025; font-weight:bold; font-size:13px;">TIẾN TRÌNH ĐÃ BỊ HỦY!</div>
+           </div>
+         `;
+        setTimeout(() => {
+          if (document.getElementById("snap-translate-popup")) {
+            document.getElementById("snap-translate-popup").remove();
+          }
+        }, 1200);
+      }
+    });
   }
 
   function updatePopupLoadingText(text) {
@@ -232,13 +268,17 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     if (textEl) {
       textEl.innerText = text;
     } else {
-      showPopupLoading();
-      document.getElementById("snap-loading-text").innerText = text;
+      if (document.getElementById("snap-translate-popup")) {
+        showPopupLoading();
+        document.getElementById("snap-loading-text").innerText = text;
+      }
     }
   }
 
   function updatePopupResult(original, translation) {
     const content = document.getElementById("snap-translate-content");
+    if (!content) return; // Bảo vệ khi user bấm hủy
+
     let html = "";
     if (original && original !== "Tìm thấy Mã QR:") {
       html += `
@@ -247,9 +287,8 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         <div class="snap-translate-text" style="white-space: pre-wrap;">${escapeHtml(original)}</div>
       </div>`;
     }
-    
+
     let safeTranslation = escapeHtml(translation);
-    // Tự động biến các đường link thành thẻ <a> có thể click được
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     safeTranslation = safeTranslation.replace(urlRegex, '<a href="$1" target="_blank" style="color: #1a73e8; text-decoration: underline; word-break: break-all;">$1</a>');
 
@@ -264,6 +303,8 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
   function updatePopupError(errorMsg) {
     const content = document.getElementById("snap-translate-content");
+    if (!content) return; // Bảo vệ khi user bấm hủy
+
     content.innerHTML = `
       <div class="snap-translate-section">
         <div class="snap-translate-label" style="color:#d93025;">Có Lỗi Xảy Ra</div>
@@ -276,11 +317,11 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
   function escapeHtml(unsafe) {
     return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function makeDraggable(elmnt, header) {

@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const modeSelect = document.getElementById("mode-select");
   const specialtyCard = document.getElementById("specialty-card");
   const aiChannelCard = document.getElementById("ai-channel-card");
   const autopromptCard = document.getElementById("autoprompt-input").closest('.card');
@@ -23,10 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load saved option
   chrome.storage.sync.get([
-    "mode", "specialty", "autoprompt", 
+    "specialty", "autoprompt", 
     "useOcr", "aiChannel", "apiUrl", "apiModel", "apiKey"
   ], (data) => {
-    if (data.mode) modeSelect.value = data.mode;
     if (data.specialty) specialtyInput.value = data.specialty;
     if (data.autoprompt) autopromptInput.value = data.autoprompt;
     
@@ -36,30 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.apiModel) apiModelInput.value = data.apiModel;
     if (data.apiKey) apiKeyInput.value = data.apiKey;
 
-    toggleCardsBasedOnMode();
     toggleChannelConfig();
   });
 
-  modeSelect.addEventListener("change", toggleCardsBasedOnMode);
   channelSelect.addEventListener("change", toggleChannelConfig);
 
-  function toggleCardsBasedOnMode() {
-    const isQr = modeSelect.value === "qr";
-    specialtyCard.style.display = isQr ? "none" : "block";
-    aiChannelCard.style.display = isQr ? "none" : "block";
-    autopromptCard.style.display = isQr ? "none" : "block";
-    
-    // Auth card depends on Channel as well
-    toggleChannelConfig();
-  }
-
   function toggleChannelConfig() {
-    if (modeSelect.value === "qr") {
-      apiConfigBox.style.display = "none";
-      webAuthCard.style.display = "none";
-      return;
-    }
-
     const channel = channelSelect.value;
     if (channel === "web") {
       apiConfigBox.style.display = "none";
@@ -80,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   saveBtn.addEventListener("click", () => {
     chrome.storage.sync.set({ 
-      mode: modeSelect.value, 
       specialty: specialtyInput.value.trim(), 
       autoprompt: autopromptInput.value.trim(),
       useOcr: ocrToggle.checked,
@@ -96,12 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  viewArchBtn.addEventListener("click", () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("architecture.html") });
-  });
 
   checkAuthBtn.addEventListener("click", checkAuthStatus);
   checkAuthStatus();
+
+  viewArchBtn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("html/architecture.html") });
+  });
 });
 
 async function checkAuthStatus() {

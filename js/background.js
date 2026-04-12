@@ -9,9 +9,7 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  startSnap(tab);
-});
+// (Action click đã được chuyển sang giao diện thay vì trigger bằng click thẳng)
 
 async function startSnap(tab) {
   if (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) {
@@ -21,15 +19,18 @@ async function startSnap(tab) {
 
   chrome.tabs.sendMessage(tab.id, { action: "START_SNAP" }).catch(async () => {
     try {
-      await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["content.css"] });
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["css/content.css"] });
+      await chrome.scripting.executeScript({ 
+        target: { tabId: tab.id }, 
+        files: ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"] 
+      });
       chrome.tabs.sendMessage(tab.id, { action: "START_SNAP" });
     } catch (e) {
       console.log("Cannot start snap even with dynamic injection fallback: ", e);
       if (tab.url.startsWith("file://")) {
         chrome.notifications.create({
           type: "basic",
-          iconUrl: "images/icon-48.png",
+          iconUrl: "assets/icon.png",
           title: "Cấp quyền cho File PDF cục bộ",
           message: "Để Snap trên file PDF lưu trên máy (file://), hãy mở chi tiết Extension này và bật tính năng 'Allow access to file URLs'."
         });
@@ -44,6 +45,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
       sendResponse({ dataUrl: dataUrl });
     });
+    return true;
+  }
+
+  if (request.action === "OPEN_OPTIONS") {
+    if (chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    } else {
+      window.open(chrome.runtime.getURL('html/options.html'));
+    }
     return true;
   }
 
@@ -154,16 +164,39 @@ async function translateViaWebAuth(base64Image, ocrText, promptText, sendRespons
     // Lấy TẤT CẢ các tab trùng url trên TẤT CẢ window
     const tabs = await chrome.tabs.query({ url: "*://chatgpt.com/*" });
     
-    if (tabs.length > 0) {
-      targetTabId = tabs[0].id;
-      if (tabs[0].discarded) {
+    // Ưu tiên tìm Tab ChatGPT đang nằm trong cửa sổ thu nhỏ (Cửa sổ rác chạy ngầm của extension)
+    let botTab = null;
+    for (let t of tabs) {
+      const win = await chrome.windows.get(t.windowId);
+      if (win.state === "minimized" || win.type === "popup") {
+        botTab = t;
+        break;
+      }
+    }
+
+    // Nếu không có cửa sổ ngầm, lấy đại tab ChatGPT đang mở, nếu không có thì tạo cửa sổ ngầm mới.
+    if (botTab) {
+      targetTabId = botTab.id;
+      if (botTab.discarded) {
         await chrome.tabs.reload(targetTabId);
         await new Promise(r => setTimeout(r, 2000));
       }
+    } else if (tabs.length > 0) {
+      targetTabId = tabs[0].id;
+      if (tabs[0].discarded) {
+         await chrome.tabs.reload(targetTabId);
+         await new Promise(r => setTimeout(r, 2000));
+      }
     } else {
       isNewTab = true;
-      const newTab = await chrome.tabs.create({ url: "https://chatgpt.com/", active: false, pinned: true });
-      targetTabId = newTab.id;
+      // Trọng tâm: Tạo cửa sổ mới thu nhỏ hoàn toàn (chạy nền) thay vì tab ghim
+      const newWin = await chrome.windows.create({ 
+        url: "https://chatgpt.com/", 
+        type: "popup", 
+        state: "minimized" 
+      });
+      targetTabId = newWin.tabs[0].id;
+      
       await new Promise((resolve) => {
         chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
           if (tabId === targetTabId && info.status === 'complete') {
@@ -212,7 +245,7 @@ async function translateViaWebAuth(base64Image, ocrText, promptText, sendRespons
         if (attempts < 3) {
           if (attempts === 2) {
             try {
-              await chrome.scripting.executeScript({ target: { tabId: targetTabId }, files: ["chatgpt_automator.js"] });
+              await chrome.scripting.executeScript({ target: { tabId: targetTabId }, files: ["js/chatgpt_automator.js"] });
             } catch(e) {}
           }
           await new Promise(r => setTimeout(r, 1500));

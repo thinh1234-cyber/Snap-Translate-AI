@@ -1,13 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "Snap & Translate (ChatGPT Vision)",
+  "name": "Snap & Translate AI",
   "version": "1.0.0",
-  "description": "Chụp vùng màn hình (snap) và tự động trích xuất, dịch văn bản chuyên ngành bằng ChatGPT Plus.",
+  "description": "Chụp vùng màn hình (snap) và tự động trích xuất, dịch văn bản chuyên ngành bằng AI.",
+  "icons": {
+    "48": "assets/icon.png",
+    "128": "assets/icon.png"
+  },
   "action": {
-    "default_title": "Snap & Translate"
+    "default_title": "Snap & Translate",
+    "default_popup": "html/popup.html"
   },
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "js/background.js",
     "type": "module"
   },
   "permissions": [
@@ -25,32 +30,32 @@
   "content_scripts": [
     {
       "matches": ["*://chatgpt.com/*"],
-      "js": ["chatgpt_automator.js"],
+      "js": ["js/chatgpt_automator.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["<all_urls>"],
-      "js": ["tesseract.min.js", "jsQR.js", "content.js"],
-      "css": ["content.css"],
+      "js": ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"],
+      "css": ["css/content.css"],
       "run_at": "document_idle"
     }
   ],
   "commands": {
     "snap-region": {
       "suggested_key": {
-        "default": "Ctrl+Shift+X",
-        "mac": "MacCtrl+Shift+X"
+        "default": "Alt+X",
+        "mac": "Alt+X"
       },
       "description": "Kích hoạt chức năng chụp một vùng màn hình"
     }
   },
-  "options_page": "options.html",
+  "options_page": "html/options.html",
   "web_accessible_resources": [
     {
       "resources": [
-        "content.css",
-        "worker.min.js",
-        "tesseract-core.wasm.js"
+        "css/content.css",
+        "lib/worker.min.js",
+        "lib/tesseract-core.wasm.js"
       ],
       "matches": [
         "<all_urls>"

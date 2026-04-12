@@ -3,6 +3,25 @@
 
 let isAutomating = false; // Khóa Mutex chống dẫm luồng
 
+// 🔴 TIÊM LIỀU THUỐC CHỐNG NGỦ ĐÔNG (ANTI-THROTTLING) 🔴
+// Đánh lừa ReactJS của ChatGPT rằng Tab này luôn luôn đang được người dùng mở xem (Visible).
+// Nhờ đó ChatGPT sẽ không đóng băng tiến trình Render DOM khi tab bị ẩn.
+const antiSleepScript = document.createElement('script');
+antiSleepScript.textContent = `
+  try {
+    Object.defineProperty(document, 'visibilityState', { get: () => 'visible' });
+    Object.defineProperty(document, 'hidden', { get: () => false });
+    
+    // Thúc ép requestAnimationFrame phải chạy bằng setTimeout khi Tab bị ẩn (Fallback rendering)
+    const originalRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = function(cb) {
+       return window.setTimeout(cb, 16); // Chrome sẽ bóp setTimeout xuống 1000ms ở background nhưng vẫn chạy!
+    };
+  } catch(e) {}
+`;
+document.documentElement.appendChild(antiSleepScript);
+antiSleepScript.remove();
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "PROCESS_VISION" || request.action === "PROCESS_TEXT") {
     if (isAutomating) {
@@ -114,33 +133,48 @@ function observeResponseLifecycle(initialCount, MSG_SELECTOR) {
 
     // Polling siêu nhẹ cứ 500ms một lần
     checkInterval = setInterval(() => {
-      // Logic Lõi: KHI NÀO NÚT SEND TRỞ LẠI -> BẤM ĐƯỢC -> CHATGPT CHẮC CHẮN ĐÃ NGHỈ TAY
-      const sendBtn = document.querySelector('[data-testid="send-button"]');
+      // Logic Lõi: KHI NÀO NÚT STOP BIẾN MẤT VÀ CÓ TIN NHẮN MỚI XUẤT HIỆN -> CHATGPT ĐÃ NGHỈ TAY
+      const stopBtn = document.querySelector('[data-testid="stop-button"]');
+      const msgs = document.querySelectorAll(MSG_SELECTOR);
       
-      // Đợi nút Send mọc lại và mở khóa
-      if (sendBtn && !sendBtn.disabled) {
+      // Không còn nút Dừng và đã có thẻ tin nhắn mới trả về
+      // (Không dùng nút Send làm dấu hiệu nữa vì ChatGPT có thể biến nút Send thành nút Microphone)
+      if (!stopBtn && msgs.length > initialCount) {
         clearInterval(checkInterval);
         clearTimeout(fallbackTimeout);
 
-        // Chờ thêm chút thời gian an toàn trước khi bóc text
-        setTimeout(() => {
-            const msgs = document.querySelectorAll(MSG_SELECTOR);
-            if (msgs.length <= initialCount) {
-               return reject(new Error("ChatGPT đã dừng nhưng không trả về bất kì văn bản nào."));
-            }
+        // Chờ và Check liên tục tối đa 5 giây cho đến khi text xuất hiện trong DOM
+        let checks = 0;
+        const textCheckInterval = setInterval(() => {
+            // Liên tục bắn tín hiệu giả lập Focus để chọc React render UI dù tab đang bị ẩn
+            try { 
+               window.dispatchEvent(new Event('focus')); 
+               document.dispatchEvent(new Event('visibilitychange')); 
+            } catch(e) {}
+
+            checks++;
+            const currentMsgs = document.querySelectorAll(MSG_SELECTOR);
+            const lastMsg = currentMsgs[currentMsgs.length - 1];
             
-            const lastMsg = msgs[msgs.length - 1];
-            // Chỉ bóc lõi Text sạch nhất (bỏ phần Thinking, Icon rác trên lề)
+            if (!lastMsg) {
+              if (checks > 10) {
+                 clearInterval(textCheckInterval);
+                 return reject(new Error("ChatGPT đã dừng nhưng không tìm thấy tin nhắn trả về."));
+              }
+              return;
+            }
+
             const pureMarkdown = lastMsg.querySelector('.markdown');
+            const text = pureMarkdown ? pureMarkdown.innerText.trim() : lastMsg.innerText.trim();
             
-            if (pureMarkdown && pureMarkdown.innerText.trim().length > 0) {
-              resolve(pureMarkdown.innerText);
-            } else if (lastMsg.innerText.trim().length > 0) { // Fallback chống vã
-              resolve(lastMsg.innerText);
-            } else {
-              reject(new Error("Lỗi: Không thể trích xuất đoạn văn từ mã nguồn của ChatGPT."));
+            if (text.length > 0) {
+              clearInterval(textCheckInterval);
+              resolve(text);
+            } else if (checks > 10) { // Timeout 5 giây
+              clearInterval(textCheckInterval);
+              reject(new Error("Lỗi: Không thể trích xuất đoạn văn từ mã nguồn của ChatGPT. Khung DOM có thể đang bị rỗng."));
             }
-        }, 500); // Đợi 500ms cho text định hình DOM cuối
+        }, 500);
       }
     }, 500);
 
