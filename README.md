@@ -16,7 +16,7 @@
 </div>
 
 ---
-<img src="/assets/V1.png" alt="Visualization" width="600">
+<img src="/assets/V1.png" alt="Visualization" width="1000">
 ## 🌟 Tính năng chính
 
 ### 1. 📸 Snap-to-Translate (AI Vision)
