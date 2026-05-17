@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveMsg = document.getElementById("save-msg");
   const checkAuthBtn = document.getElementById("check-auth-btn");
   const openFullArchBtn = document.getElementById("open-full-arch-btn");
+  const openEvolutionBtn = document.getElementById("open-evolution-btn");
 
   chrome.storage.sync.get({
     specialty: "",
@@ -101,6 +102,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   openFullArchBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("html/architecture.html") });
+  });
+
+  openEvolutionBtn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("html/evolution.html") });
   });
 
   // Architecture preview nodes
