@@ -7,71 +7,130 @@
 </head>
 <body>
   <div class="container">
-    <h1>Cài đặt Snap & Translate AI</h1>
-    
-    <div class="card" id="specialty-card">
-      <div class="section-title">Chuyên ngành dịch thuật</div>
-      <p class="description">Chọn hoặc nhập chuyên ngành để cấu hình ngữ cảnh dịch cho AI (ví dụ: IT, Y tế, Blockchain, Pháp lý).</p>
-      <input type="text" id="specialty-input" placeholder="Ví dụ: Công nghệ thông tin (IT)...">
+    <div class="options-header">
+      <h1>⚙️ Cài đặt</h1>
+      <div class="header-tabs">
+        <button class="tab-btn active" data-tab="general">🔧 Chung</button>
+        <button class="tab-btn" data-tab="memory">📝 Lịch sử</button>
+        <button class="tab-btn" data-tab="architecture">🏗 Kiến trúc</button>
+      </div>
     </div>
 
-    <!-- MỚI: Tính năng Đa Kênh & OCR -->
-    <div class="card" id="ai-channel-card">
-      <div class="section-title">Kênh Xử Lý Trí Tuệ Nhân Tạo (AI Channel)</div>
-      <p class="description" style="color: #666; margin-bottom: 12px; font-size: 13px;">Chọn luồng phân tích ngôn ngữ. Bạn có thể tận dụng Web thả rông, hoặc cắm cấu hình Server API (OpenAI/Gemini)/Local API.</p>
-      
-      <label style="display:flex; align-items:center; gap:8px; margin-bottom: 12px; font-weight: bold; cursor: pointer;">
-        <input type="checkbox" id="ocr-toggle" style="width: 18px; height: 18px; accent-color: #0f9d58;"> 
-        <span style="color:#0f9d58">Sử dụng lõi Tesseract.js bóc chữ Offline trước khi dịch (Tốc độ X10)</span>
-      </label>
-
-      <select id="channel-select" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; margin-bottom: 10px; background: #fff;">
-        <option value="web">Web ChatGPT (Miễn phí, chậm)</option>
-        <option value="api_server">Server API (Cần API Key, Siêu tốc)</option>
-        <option value="api_local">Local API (LM Studio/Ollama, OFFLINE)</option>
-      </select>
-
-      <div id="api-config" style="display: none; background: #f1f3f4; padding: 15px; border-radius: 8px; margin-top: 10px;">
-        <div style="margin-bottom: 10px;">
-          <label style="display:block; margin-bottom: 4px; font-size: 13px; font-weight:bold;">Base URL (Cổng gọi hàm OpenAI-style v1/chat/completions)</label>
-          <input type="text" id="api-url" placeholder="VD: https://api.openai.com/v1/chat/completions hoặc http://localhost:1234/v1/chat/completions" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    <!-- GENERAL TAB -->
+    <div class="tab-content active" id="tab-general">
+      <div class="card" id="theme-card">
+        <div class="section-title">🎨 Giao diện</div>
+        <p class="description">Chọn chế độ sáng hoặc tối cho giao diện extension.</p>
+        <div class="theme-toggle">
+          <label for="theme-toggle">Dark Mode</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div style="margin-bottom: 10px;">
-          <label style="display:block; margin-bottom: 4px; font-size: 13px; font-weight:bold;">Tên Model</label>
-          <input type="text" id="api-model" placeholder="VD: gpt-4o-mini hoặc llama3-8b" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+
+      <div class="card" id="specialty-card">
+        <div class="section-title">📚 Chuyên ngành dịch thuật</div>
+        <p class="description">Chọn hoặc nhập chuyên ngành để cấu hình ngữ cảnh dịch cho AI.</p>
+        <input type="text" id="specialty-input" placeholder="Ví dụ: Công nghệ thông tin (IT), Y tế, Blockchain...">
+      </div>
+
+      <div class="card" id="ai-channel-card">
+        <div class="section-title">🤖 Kênh Xử Lý AI</div>
+        <p class="description">Chọn luồng phân tích ngôn ngữ: Web ChatGPT, Server API, hoặc Local API.</p>
+
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom: 12px; font-weight: bold; cursor: pointer;">
+          <input type="checkbox" id="ocr-toggle" style="width: 18px; height: 18px; accent-color: #0f9d58;">
+          <span style="color:#0f9d58">Sử dụng Tesseract.js OCR Offline trước khi dịch</span>
+        </label>
+
+        <select id="channel-select">
+          <option value="web">Web ChatGPT (Miễn phí, chậm)</option>
+          <option value="api_server">Server API (Cần API Key, Siêu tốc)</option>
+          <option value="api_local">Local API (LM Studio/Ollama, OFFLINE)</option>
+        </select>
+
+        <div id="api-config" style="display: none;">
+          <div>
+            <label>Base URL</label>
+            <input type="text" id="api-url" placeholder="https://api.openai.com/v1/chat/completions">
+          </div>
+          <div>
+            <label>Tên Model</label>
+            <input type="text" id="api-model" placeholder="gpt-4o-mini hoặc llama3-8b">
+          </div>
+          <div>
+            <label>API Key</label>
+            <input type="password" id="api-key" placeholder="sk-...">
+          </div>
         </div>
-        <div style="margin-bottom: 5px;">
-          <label style="display:block; margin-bottom: 4px; font-size: 13px; font-weight:bold;">API Key (Bỏ trống nếu dùng Local API)</label>
-          <input type="password" id="api-key" placeholder="Bearer Token (VD: sk-...)" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+
+      <div class="card">
+        <div class="section-title">📝 Custom Autoprompt</div>
+        <p class="description">Thêm hướng dẫn tối ưu cho AI, ghép tự động vào lệnh mỗi khi chụp ảnh.</p>
+        <textarea id="autoprompt-input" rows="4" placeholder="Ví dụ: Dịch với văn phong tự nhiên, ưu tiên thuật ngữ tiếng Việt..."></textarea>
+      </div>
+
+      <div class="card" id="web-auth-card">
+        <div class="section-title">🔐 Trạng thái ChatGPT Plus</div>
+        <p class="description">Kiểm tra kết nối với Web Session ChatGPT.</p>
+        <div class="auth-status" id="auth-status">
+          <span class="status-indicator loading"></span> Đang kiểm tra...
+        </div>
+        <button id="check-auth-btn" class="btn">Kiểm tra lại</button>
+        <a href="https://chatgpt.com" target="_blank" class="link">Mở ChatGPT để đăng nhập</a>
+      </div>
+
+      <button id="save-btn" class="btn btn-primary">💾 Lưu cài đặt</button>
+      <div id="save-msg" class="msg">Đã lưu thành công!</div>
+    </div>
+
+    <!-- MEMORY TAB -->
+    <div class="tab-content" id="tab-memory">
+      <div class="card" id="memory-card">
+        <div class="section-title">📝 Lịch sử Snap</div>
+        <p class="description">Xem lại các lần chụp và dịch trước đây. Tối đa 100 entries.</p>
+
+        <div class="memory-controls">
+          <input type="text" id="memory-search" placeholder="🔍 Tìm kiếm trong lịch sử...">
+          <button id="memory-clear-btn" class="btn btn-danger">🗑 Xóa tất cả</button>
+        </div>
+
+        <div class="memory-stats" id="memory-stats">
+          <span class="stat">📊 Tổng: <b id="memory-count">0</b></span>
+          <span class="stat">🌍 Dịch: <b id="memory-translate-count">0</b></span>
+          <span class="stat">📷 QR: <b id="memory-qr-count">0</b></span>
+        </div>
+
+        <div id="memory-list">
+          <div class="memory-empty">📭 Đang tải lịch sử...</div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-title">Quy tắc Custom Autoprompt</div>
-      <p class="description">Thêm các quy tắc tối ưu hướng dẫn AI. Nó sẽ được ghép tự động vào sau lệnh mỗi khi bạn dùng tính năng chụp ảnh.</p>
-      <textarea id="autoprompt-input" rows="4" placeholder="Ví dụ: Dịch với văn phong tự nhiên, ưu tiên dùng thuật ngữ tiếng Việt thay vì mượn từ. Hãy giữ nguyên cấu trúc dòng..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-    </div>
-
-    <div class="card" id="web-auth-card">
-      <div class="section-title">Trạng thái xác thực ChatGPT Plus (Dành cho Kênh Web)</div>
-      <p class="description">Tiện ích này sẽ trực tiếp kết nối với Web Session trên khung chat ChatGPT đang mở của bạn.</p>
-      <div class="auth-status" id="auth-status">
-        <span class="status-indicator loading"></span> Đang kiểm tra trạng thái...
+    <!-- ARCHITECTURE TAB -->
+    <div class="tab-content" id="tab-architecture">
+      <div class="card" id="arch-card">
+        <div class="section-title">🏗 Kiến trúc Hệ thống</div>
+        <p class="description">Xem sơ đồ tương tác minh họa luồng hoạt động nội bộ của Extension.</p>
+        <div id="arch-preview" class="arch-preview">
+          <div class="arch-node" data-node="popup">📱 Popup</div>
+          <div class="arch-node" data-node="content">🌐 Content Script</div>
+          <div class="arch-node" data-node="background">🔀 Background SW</div>
+          <div class="arch-node" data-node="memory">💾 Memory</div>
+          <div class="arch-node" data-node="ocr">🔍 OCR Engine</div>
+          <div class="arch-node" data-node="translate">🌍 Translation</div>
+          <div class="arch-node" data-node="chatgpt">🤖 ChatGPT</div>
+          <div class="arch-node" data-node="api">🔗 API/Local</div>
+        </div>
+        <div id="arch-info" class="arch-info">
+          <p>👆 Nhấn vào từng node để xem chi tiết luồng dữ liệu</p>
+        </div>
+        <button id="open-full-arch-btn" class="btn">🔍 Xem đầy đủ trong tab mới</button>
       </div>
-      <button id="check-auth-btn" class="btn">Kiểm tra lại</button>
-      <a href="https://chatgpt.com" target="_blank" class="link">Mở trang ChatGPT để đăng nhập</a>
     </div>
-
-
-    <div class="card">
-      <div class="section-title">Khám phá cấu trúc</div>
-      <p class="description">Xem giao diện tương tác minh họa luồng hoạt động nội bộ và kiến trúc chi tiết của Extension.</p>
-      <button id="view-arch-btn" class="btn" style="background:#5f6368; color:white; border:none; margin-top:5px;">🔍 Xem Kiến Trúc Hệ Thống</button>
-    </div>
-
-    <button id="save-btn" class="btn btn-primary">Lưu cài đặt</button>
-    <div id="save-msg" class="msg">Đã lưu thành công!</div>
   </div>
   <script src="../js/options.js"></script>
 </body>

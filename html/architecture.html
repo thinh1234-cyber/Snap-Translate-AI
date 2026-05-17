@@ -2,120 +2,235 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Mạng Nơ-ron Hệ Thống - Snap & Translate AI</title>
+  <title>Kiến trúc Hệ thống — Snap & Translate AI</title>
   <script src="../lib/vis-network.min.js"></script>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #0b0f19; /* Dark cyberpunk background */
+      background: #0a0e17;
       color: #e0e6ed;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden; /* Ngăn cuộn */
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
     }
 
-    #mynetwork {
-      width: 100vw;
-      height: 100vh;
-      display: block;
+    #mynetwork { width: 100vw; height: 100vh; display: block; }
+
+    .top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: rgba(10, 14, 23, 0.95);
+      border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .top-bar h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #00e5ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-bar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-bar button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #e0e6ed;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .top-bar button:hover {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: #00e5ff;
     }
 
     .info-panel {
       position: absolute;
-      top: 20px;
+      top: 72px;
       right: 20px;
-      width: 380px;
-      background: rgba(16, 22, 38, 0.9);
-      border: 1px solid #1f2d48;
+      width: 360px;
+      max-height: calc(100vh - 100px);
+      background: rgba(12, 16, 28, 0.95);
+      border: 1px solid rgba(0, 229, 255, 0.2);
       border-radius: 12px;
       padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,255,255,0.1);
-      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      overflow-y: auto;
       transition: all 0.3s ease;
-      z-index: 10;
     }
 
-    .title {
-      font-size: 20px;
-      font-weight: bold;
-      color: #00e5ff;
-      margin-bottom: 15px;
+    .info-panel .panel-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      margin-bottom: 12px;
     }
 
-    .desc {
+    .info-panel .panel-title {
       font-size: 14px;
+      font-weight: 600;
+      color: #00e5ff;
+    }
+
+    .info-panel .close-panel {
+      background: none;
+      border: none;
+      color: #a0aec0;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+    }
+    .info-panel .close-panel:hover { color: #fff; }
+
+    .info-panel .panel-body {
+      font-size: 13px;
       line-height: 1.6;
       color: #a0aec0;
     }
 
-    .neon-text {
-      color: #fff;
-      text-shadow: 0 0 5px #00e5ff, 0 0 10px #00e5ff;
+    .info-panel .panel-body b { color: #e0e6ed; }
+
+    .flow-list {
+      margin-top: 12px;
+      padding: 0;
+      list-style: none;
+    }
+    .flow-list li {
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      border-left: 3px solid #00e5ff;
     }
 
-    #node-title { font-size: 18px; color: #fff; font-weight: 600; margin-bottom: 10px;}
-    #node-desc { font-size: 14px; color: #cbd5e0; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .stat-card .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #00e5ff;
+    }
+    .stat-card .stat-label {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 2px;
+    }
 
-    .instructions {
+    .legend {
       position: absolute;
       bottom: 20px;
       left: 20px;
-      font-size: 13px;
-      color: #4a5568;
-      pointer-events: none;
+      background: rgba(12, 16, 28, 0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 14px;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    .legend h3 {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
     }
 
-    .close-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 99;
-      transition: all 0.2s;
+    .pulse {
+      animation: pulse 2s infinite;
     }
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
-    
-    .status-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      background: rgba(0, 229, 255, 0.15);
-      border: 1px solid #00e5ff;
-      border-radius: 4px;
-      font-size: 12px;
+
+    .default-desc {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .default-desc p {
+      font-size: 13px;
+      color: #718096;
+      line-height: 1.6;
+    }
+    .default-desc .highlight {
       color: #00e5ff;
-      margin-top: 10px;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
 
-  <button class="close-btn" id="close-btn">✖ Đóng lại</button>
-
-  <div class="info-panel" id="info-box">
-    <div class="title">🧠 Nơ-ron Kiến Trúc</div>
-    <div class="desc" id="default-desc">
-      Hệ thống hiện tại được biểu diễn dưới dạng <b>Mạng kết nối Nơ-ron thần kinh</b>. Mỗi điểm sáng là một khối lệnh hoặc tính năng. Các liên kết là dòng chảy dữ liệu (Synapses).<br><br>
-      <span style="color:#00e5ff">👉 <b>Tương tác:</b> Cuộn chuột để Zoom, giữ chuột để xoay kéo không gian, và BẤM VÀO TỪNG NƠ-RON để xem chi tiết thông tin bên trong.</span>
-    </div>
-    
-    <div id="dynamic-desc" style="display: none;">
-      <div id="node-title"></div>
-      <div id="node-desc"></div>
-      <div class="status-badge">Tình trạng: Hoàn hảo</div>
+  <div class="top-bar">
+    <h1>🧠 Kiến trúc Hệ thống</h1>
+    <div class="top-bar-actions">
+      <button id="reset-view-btn">🔄 Reset View</button>
+      <button id="toggle-physics-btn">⏸ Tạm dừng Physics</button>
+      <button id="close-btn">✕ Đóng</button>
     </div>
   </div>
 
-  <div class="instructions">Sử dụng thao tác kéo thả và cuộn chuột.</div>
+  <div class="info-panel" id="info-box">
+    <div class="panel-header">
+      <span class="panel-title">📊 Thông tin Node</span>
+      <button class="close-panel" id="close-panel-btn">✕</button>
+    </div>
+    <div class="panel-body" id="panel-body">
+      <div class="default-desc">
+        <p>Hệ thống được biểu diễn dưới dạng <span class="highlight">Mạng Nơ-ron tương tác</span>.</p>
+        <p style="margin-top:8px;">👆 <b>Nhấn vào node</b> để xem chi tiết<br>🖱 <b>Cuộn chuột</b> để Zoom<br>✋ <b>Kéo thả</b> để xoay không gian</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" id="legend">
+    <h3>Legend</h3>
+    <div class="legend-item"><div class="legend-dot" style="background:#2196f3;"></div> UI / Giao diện</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f50057;"></div> Service Worker</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9c27b0;"></div> Automator / Bot</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff3d00;"></div> Core / Brain</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00e676;"></div> Offline Engine</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffc107;"></div> Memory / Storage</div>
+  </div>
 
   <div id="mynetwork"></div>
 

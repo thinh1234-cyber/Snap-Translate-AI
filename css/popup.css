@@ -1,9 +1,35 @@
+:root {
+  --snap-popup-bg: #f8f9fa;
+  --snap-popup-text: #202124;
+  --snap-popup-header-bg: linear-gradient(135deg, #1a73e8, #0f9d58);
+  --snap-popup-card: #ffffff;
+  --snap-popup-card-text: #3c4043;
+  --snap-popup-border: #dadce0;
+  --snap-popup-footer-bg: #e8eaed;
+  --snap-popup-footer-text: #5f6368;
+  --snap-popup-secondary-bg: #ffffff;
+  --snap-popup-secondary-text: #3c4043;
+}
+
+[data-theme="dark"] {
+  --snap-popup-bg: #1e1e1e;
+  --snap-popup-text: #e8eaed;
+  --snap-popup-header-bg: linear-gradient(135deg, #174ea6, #137333);
+  --snap-popup-card: #2d2d2d;
+  --snap-popup-card-text: #e8eaed;
+  --snap-popup-border: #5f6368;
+  --snap-popup-footer-bg: #2d2d2d;
+  --snap-popup-footer-text: #9aa0a6;
+  --snap-popup-secondary-bg: #2d2d2d;
+  --snap-popup-secondary-text: #e8eaed;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa;
-  color: #202124;
+  background-color: var(--snap-popup-bg, #f8f9fa);
+  color: var(--snap-popup-text, #202124);
   width: 320px;
 }
 
@@ -13,13 +39,46 @@ body {
 }
 
 .header {
-  background: linear-gradient(135deg, #1a73e8, #0f9d58);
+  background: var(--snap-popup-header-bg, linear-gradient(135deg, #1a73e8, #0f9d58));
   padding: 20px 15px;
   display: flex;
   align-items: center;
   gap: 12px;
   color: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.header-icon-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 16px;
+  padding: 0;
+  box-shadow: none;
+}
+
+.header-icon-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: none;
+  box-shadow: none;
+}
+
+.header-icon-btn:active {
+  transform: scale(0.95);
 }
 
 .logo {
@@ -75,7 +134,6 @@ button:active {
 }
 
 .main-action-btn {
-  grid-column: span 2;
   background-color: #1a73e8;
   color: white;
   padding: 16px;
@@ -101,14 +159,14 @@ button:active {
 }
 
 .secondary-btn {
-  background-color: #ffffff;
-  color: #3c4043;
+  background-color: var(--snap-popup-secondary-bg, #ffffff);
+  color: var(--snap-popup-secondary-text, #3c4043);
   padding: 12px;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--snap-popup-border, #dadce0);
 }
 
 .secondary-btn:hover {
-  background-color: #f1f3f4;
+  background-color: var(--snap-popup-bg, #f1f3f4);
 }
 
 .secondary-btn .icon {
@@ -123,8 +181,83 @@ button:active {
 .footer {
   text-align: center;
   padding: 12px;
-  background: #e8eaed;
+  background: var(--snap-popup-footer-bg, #e8eaed);
   font-size: 11px;
-  color: #5f6368;
-  border-top: 1px solid #dadce0;
+  color: var(--snap-popup-footer-text, #5f6368);
+  border-top: 1px solid var(--snap-popup-border, #dadce0);
+}
+
+/* Guide Overlay Styles */
+.snap-guide-container {
+  background: var(--snap-popup-card, #fff);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+  color: var(--snap-popup-text, #202124);
+}
+.snap-guide-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--snap-popup-text, #333);
+  box-shadow: none;
+  padding: 4px 8px;
+}
+.snap-guide-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.snap-guide-step h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--snap-popup-text, #202124);
+}
+.snap-guide-step p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--snap-popup-card-text, #5f6368);
+}
+.snap-guide-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+.snap-guide-nav button {
+  background: var(--snap-popup-btn-bg, #1a73e8);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: none;
+}
+.snap-guide-nav button:hover {
+  transform: none;
+  opacity: 0.9;
+}
+.snap-guide-dots {
+  display: flex;
+  gap: 8px;
+}
+.snap-guide-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--snap-popup-border, #dadce0);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.snap-guide-dots .dot.active {
+  background: var(--snap-popup-btn-bg, #1a73e8);
 }

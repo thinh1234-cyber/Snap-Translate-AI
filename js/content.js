@@ -10,7 +10,18 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     if (request.action === "START_SNAP") {
       initSnapOverlay();
     }
+    if (request.action === "THEME_CHANGED") {
+      applyTheme(request.theme);
+    }
   });
+
+  chrome.storage.sync.get({ theme: "light" }, (data) => {
+    applyTheme(data.theme);
+  });
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
 
   function initSnapOverlay() {
     if (document.getElementById("snap-translate-overlay")) return;
@@ -121,6 +132,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (code) {
               updatePopupResult("Tìm thấy Mã QR:", code.data);
+              chrome.runtime.sendMessage({
+                action: "SAVE_SNAP",
+                entry: { mode: "qr", ocrText: "", translation: code.data, sourceUrl: window.location.href }
+              });
             } else {
               updatePopupError("Không tìm thấy thông tin quét mã QR nào trong hình.");
             }
@@ -133,7 +148,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         const croppedDataUrl = canvas.toDataURL("image/png");
         let extractedText = null;
 
-        // --- BƯỚC 1: OCR (nếu bật) ---
         if (data.useOcr) {
           updatePopupLoadingText("Đang bóc tách chữ Offline (Tesseract)...");
           try {
@@ -166,12 +180,9 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           }
         }
 
-        // --- BƯỚC 2: Phân luồng theo Channel ---
         if (data.aiChannel === "web") {
-          // WEB OAUTH: Hiện OCR text ngay + Nút "Dịch bằng ChatGPT"
           showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
         } else {
-          // API / LOCAL: Gửi thẳng, hiện kết quả trong popup
           updatePopupLoadingText(extractedText ? "Đang gửi cho AI phân tích..." : "Đang chờ AI phân tích (Vision)...");
           chrome.runtime.sendMessage({
             action: "TRANSLATE_IMAGE",
@@ -180,6 +191,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           }, (res) => {
             if (res && res.success) {
               updatePopupResult(extractedText ? `(OCR Text)\n${extractedText}` : "", res.translation);
+              chrome.runtime.sendMessage({
+                action: "SAVE_SNAP",
+                entry: { mode: "translate", ocrText: extractedText || "", translation: res.translation, sourceUrl: window.location.href }
+              });
             } else {
               updatePopupError(res ? res.error : "Mất kết nối với Trung tâm điều khiển. Thử tải lại thẻ.");
             }
@@ -190,7 +205,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     img.src = dataUrl;
   }
 
-  // Web OAuth mode: Hiện OCR text + nút Dịch → Embed iframe ChatGPT bên trong popup
   function showOcrResultWithTranslateBtn(ocrText, croppedDataUrl) {
     const content = document.getElementById("snap-translate-content");
     if (!content) return;
@@ -201,15 +215,31 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         <div class="snap-translate-label">VĂN BẢN TRÍCH XUẤT (OCR)</div>
         <div class="snap-translate-text" style="white-space: pre-wrap;">${escapeHtml(displayText)}</div>
       </div>
-      <div style="text-align:center; margin-top:12px;">
+      <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:12px;">
         <button id="snap-chatgpt-translate-btn" style="
           background: linear-gradient(135deg, #10a37f, #1a7f5a);
-          color: white; border: none; padding: 9px 20px;
+          color: white; border: none; padding: 9px 16px;
           border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
-          display: inline-flex; align-items: center; gap: 7px;
+          display: inline-flex; align-items: center; gap: 6px;
           transition: 0.2s; box-shadow: 0 2px 8px rgba(16,163,127,0.35);
         ">
           <span>💬</span> Dịch bằng ChatGPT
+        </button>
+        <button id="snap-copy-ocr-btn" style="
+          background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+          border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
+          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+        ">
+          <span>📋</span> Copy
+        </button>
+        <button id="snap-export-ocr-btn" style="
+          background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+          border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
+          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+        ">
+          <span>📤</span> Export
         </button>
       </div>
     `;
@@ -222,31 +252,62 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       btn.disabled = true;
       btn.innerHTML = "<span>⏳</span> Đang chuẩn bị...";
 
-      // Bước 1: Re-set cookies chatgpt.com → SameSite=None để iframe nhận session
       chrome.runtime.sendMessage({ action: "PREP_CHATGPT_IFRAME" }, (res) => {
         if (res && !res.success) {
-          // Không tìm thấy cookie → hiển thị cảnh báo nhưng vẫn thử load (user tự đăng nhập trong iframe)
           console.warn("[SnapTranslate] Cookie prep:", res.error);
         }
         btn.innerHTML = "<span>⏳</span> Đang tải ChatGPT...";
-        // Bước 2: Tạo iframe (cookies đã được inject vào store)
         embedChatGPTIframe(ocrText, croppedDataUrl, btn);
       });
     });
+
+    // Copy button
+    document.getElementById("snap-copy-ocr-btn").addEventListener("click", () => {
+      const text = ocrText || displayText;
+      navigator.clipboard.writeText(text).then(() => {
+        const cbtn = document.getElementById("snap-copy-ocr-btn");
+        cbtn.innerHTML = '<span>✅</span> Copied!';
+        setTimeout(() => { cbtn.innerHTML = '<span>📋</span> Copy'; }, 2000);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const cbtn = document.getElementById("snap-copy-ocr-btn");
+        cbtn.innerHTML = '<span>✅</span> Copied!';
+        setTimeout(() => { cbtn.innerHTML = '<span>📋</span> Copy'; }, 2000);
+      });
+    });
+
+    // Export button
+    document.getElementById("snap-export-ocr-btn").addEventListener("click", () => {
+      const text = ocrText || displayText;
+      const timestamp = new Date().toLocaleString('vi-VN');
+      const exportText = `=== Snap & Translate AI ===\nThời gian: ${timestamp}\n\n[VĂN BẢN OCR]\n${text}\n`;
+      const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snap-ocr-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      const ebtn = document.getElementById("snap-export-ocr-btn");
+      ebtn.innerHTML = '<span>✅</span> Exported!';
+      setTimeout(() => { ebtn.innerHTML = '<span>📤</span> Export'; }, 2000);
+    });
   }
 
-  // Nhúng iframe ChatGPT vào bên trong popup OCR, thêm resize handle
   function embedChatGPTIframe(ocrText, croppedDataUrl, btn) {
     const popupEl = document.getElementById("snap-translate-popup");
     if (!popupEl) return;
 
-    // Mở rộng popup để chứa iframe, cho phép resize
     popupEl.style.width  = "420px";
     popupEl.style.height = "auto";
     popupEl.style.maxHeight = "none";
     popupEl.style.overflow = "visible";
 
-    // Thêm resize handle nếu chưa có
     if (!document.getElementById("snap-resize-handle")) {
       const rh = document.createElement("div");
       rh.id = "snap-resize-handle";
@@ -262,7 +323,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       makeResizable(popupEl, rh);
     }
 
-    // Tạo khung iframe nếu chưa có
     let iframeWrap = document.getElementById("snap-chatgpt-iframe-wrap");
     if (!iframeWrap) {
       iframeWrap = document.createElement("div");
@@ -286,10 +346,8 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       const content = document.getElementById("snap-translate-content");
       if (content) content.appendChild(iframeWrap);
 
-      // Gửi prompt khi iframe đã load xong
       iframe.addEventListener("load", () => {
         btn.innerHTML = "<span>✅</span> Đã gửi!";
-        // Gửi qua background, background sẽ tìm frame theo webNavigation API
         chrome.runtime.sendMessage({
           action: "SEND_CHATGPT_PROMPT",
           ocrText: ocrText,
@@ -297,14 +355,12 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         });
       });
     } else {
-      // Reload iframe để gửi prompt mới
       const iframe = document.getElementById("snap-chatgpt-iframe");
       if (iframe) iframe.src = "https://chatgpt.com/";
       btn.innerHTML = "<span>⏱</span> Đang nạp lại...";
     }
   }
 
-  // Resize handle cho popup
   function makeResizable(el, handle) {
     let startX, startY, startW, startH;
     handle.addEventListener("mousedown", (e) => {
@@ -316,7 +372,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       const onMove = (em) => {
         el.style.width  = Math.max(280, startW + em.clientX - startX) + "px";
         el.style.height = Math.max(200, startH + em.clientY - startY) + "px";
-        // Iframe đầy chiều cao còn lại
         const iframeWrap = document.getElementById("snap-chatgpt-iframe-wrap");
         if (iframeWrap) {
           const headerH = document.getElementById("snap-translate-header")?.offsetHeight || 40;
@@ -349,6 +404,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     header.id = "snap-translate-header";
     header.innerHTML = `
       <div style="display:flex; align-items:center; gap:8px;">
+        <span id="snap-guide-btn" title="Hướng dẫn sử dụng" style="cursor:pointer; opacity:0.8; font-size:16px; transition:0.2s;">📖</span>
         <span id="snap-settings-btn" title="Mở trang Cài đặt" style="cursor:pointer; opacity:0.8; font-size:18px; transition:0.2s;"> ⚙ </span>
         <span>Snap & Translate</span>
       </div>
@@ -372,7 +428,65 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     document.getElementById("snap-settings-btn").addEventListener("mouseover", (e) => e.target.style.opacity = "1");
     document.getElementById("snap-settings-btn").addEventListener("mouseout", (e) => e.target.style.opacity = "0.8");
 
+    document.getElementById("snap-guide-btn").addEventListener("click", () => {
+      showOnboarding();
+    });
+    document.getElementById("snap-guide-btn").addEventListener("mouseover", (e) => e.target.style.opacity = "1");
+    document.getElementById("snap-guide-btn").addEventListener("mouseout", (e) => e.target.style.opacity = "0.8");
+
     makeDraggable(popup, header);
+  }
+
+  function showOnboarding() {
+    const content = document.getElementById("snap-translate-content");
+    if (!content) return;
+
+    content.innerHTML = `
+      <div style="padding:8px 0;">
+        <h3 style="margin:0 0 16px; font-size:16px; color:var(--snap-primary, #1a73e8);">📖 Hướng dẫn sử dụng</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; gap:10px; align-items:flex-start; padding:10px; background:var(--snap-bg-secondary, #f8f9fa); border-radius:8px;">
+            <span style="font-size:20px;">1️⃣</span>
+            <div>
+              <strong style="font-size:13px;">Chụp vùng màn hình</strong>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--snap-text-secondary, #5f6368);">Nhấn <code style="background:var(--snap-border, #dadce0); padding:1px 5px; border-radius:3px;">Alt+X</code> hoặc mở extension → chọn "Snap Dịch" → kéo chuột chọn vùng cần dịch.</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; padding:10px; background:var(--snap-bg-secondary, #f8f9fa); border-radius:8px;">
+            <span style="font-size:20px;">2️⃣</span>
+            <div>
+              <strong style="font-size:13px;">OCR tự động</strong>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--snap-text-secondary, #5f6368);">Extension tự động trích xuất chữ từ ảnh. Bạn có thể tắt OCR trong Cài đặt để dùng AI Vision trực tiếp.</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; padding:10px; background:var(--snap-bg-secondary, #f8f9fa); border-radius:8px;">
+            <span style="font-size:20px;">3️⃣</span>
+            <div>
+              <strong style="font-size:13px;">Dịch thuật</strong>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--snap-text-secondary, #5f6368);">Nhấn "Dịch bằng ChatGPT" để gửi văn bản cho AI. Kết quả hiển thị ngay trong popup. Dùng 📋 Copy hoặc 📤 Export để lưu.</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; padding:10px; background:var(--snap-bg-secondary, #f8f9fa); border-radius:8px;">
+            <span style="font-size:20px;">4️⃣</span>
+            <div>
+              <strong style="font-size:13px;">Đọc mã QR</strong>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--snap-text-secondary, #5f6368);">Chọn "Snap Đọc QR" → chụp vùng chứa mã QR → nội dung hiển thị ngay lập tức.</p>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <button id="snap-onboarding-close" style="
+            background:var(--snap-primary, #1a73e8); color:white; border:none;
+            padding:8px 24px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;
+          ">Đã hiểu ✓</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("snap-onboarding-close").addEventListener("click", () => {
+      chrome.storage.sync.set({ hasSeenOnboarding: true });
+      showPopupLoading();
+    });
   }
 
   function showPopupLoading() {
@@ -393,11 +507,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
     document.getElementById("snap-cancel-btn").addEventListener("click", () => {
       if (document.getElementById("snap-translate-popup")) {
-        // Hiệu ứng notification Hủy Tiền Trình
         content.innerHTML = `
            <div style="display:flex; flex-direction:column; align-items:center; padding:15px 0;">
-             <div style="color:#d93025; font-size:24px; margin-bottom:8px;">⛔</div>
-             <div style="color:#d93025; font-weight:bold; font-size:13px;">TIẾN TRÌNH ĐÃ BỊ HỦY!</div>
+             <div style="color:var(--snap-danger, #d93025); font-size:24px; margin-bottom:8px;">⛔</div>
+             <div style="color:var(--snap-danger, #d93025); font-weight:bold; font-size:13px;">TIẾN TRÌNH ĐÃ BỊ HỦY!</div>
            </div>
          `;
         setTimeout(() => {
@@ -423,10 +536,14 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
   function updatePopupResult(original, translation) {
     const content = document.getElementById("snap-translate-content");
-    if (!content) return; // Bảo vệ khi user bấm hủy
+    if (!content) return;
+
+    const isQR = original === "Tìm thấy Mã QR:";
+    const label = isQR ? "NỘI DUNG MÃ QR:" : "KẾT QUẢ TỪ CHATGPT";
+    const textColor = isQR ? "var(--snap-success, #0f9d58)" : "var(--snap-primary, #0b57d0)";
 
     let html = "";
-    if (original && original !== "Tìm thấy Mã QR:") {
+    if (original && !isQR) {
       html += `
       <div class="snap-translate-section">
         <div class="snap-translate-label">BẢN GỐC</div>
@@ -436,25 +553,74 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
     let safeTranslation = escapeHtml(translation);
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    safeTranslation = safeTranslation.replace(urlRegex, '<a href="$1" target="_blank" style="color: #1a73e8; text-decoration: underline; word-break: break-all;">$1</a>');
+    safeTranslation = safeTranslation.replace(urlRegex, '<a href="$1" target="_blank" style="color: var(--snap-link, #1a73e8); text-decoration: underline; word-break: break-all;">$1</a>');
 
     html += `
       <div class="snap-translate-section">
-        <div class="snap-translate-label">${original === "Tìm thấy Mã QR:" ? "NỘI DUNG MÃ QR:" : "KẾT QUẢ TỪ CHATGPT"}</div>
-        <div class="snap-translate-text" style="${original === "Tìm thấy Mã QR:" ? "color:#0f9d58" : "color:#0b57d0"}; font-weight:500; white-space: pre-wrap;">${safeTranslation}</div>
+        <div class="snap-translate-label">${label}</div>
+        <div class="snap-translate-text" style="color:${textColor}; font-weight:500; white-space: pre-wrap;">${safeTranslation}</div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="snap-copy-btn" data-text="${escapeAttr(translation)}" style="
+            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+            border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
+            cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+          ">📋 Copy</button>
+          <button class="snap-export-btn" data-original="${escapeAttr(original || '')}" data-translation="${escapeAttr(translation)}" style="
+            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+            border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
+            cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+          ">📤 Export</button>
+        </div>
       </div>
     `;
     content.innerHTML = html;
+
+    content.querySelectorAll('.snap-copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-text');
+        navigator.clipboard.writeText(text).then(() => {
+          btn.innerHTML = '✅ Copied!';
+          setTimeout(() => { btn.innerHTML = '📋 Copy'; }, 2000);
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.innerHTML = '✅ Copied!';
+          setTimeout(() => { btn.innerHTML = '📋 Copy'; }, 2000);
+        });
+      });
+    });
+
+    content.querySelectorAll('.snap-export-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const original = btn.getAttribute('data-original');
+        const translation = btn.getAttribute('data-translation');
+        const timestamp = new Date().toLocaleString('vi-VN');
+        const exportText = `=== Snap & Translate AI ===\nThời gian: ${timestamp}\n\n[BẢN GỐC]\n${original}\n\n[BẢN DỊCH]\n${translation}\n`;
+        const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `snap-translate-${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        btn.innerHTML = '✅ Exported!';
+        setTimeout(() => { btn.innerHTML = '📤 Export'; }, 2000);
+      });
+    });
   }
 
   function updatePopupError(errorMsg) {
     const content = document.getElementById("snap-translate-content");
-    if (!content) return; // Bảo vệ khi user bấm hủy
+    if (!content) return;
 
     content.innerHTML = `
       <div class="snap-translate-section">
-        <div class="snap-translate-label" style="color:#d93025;">Có Lỗi Xảy Ra</div>
-        <div class="snap-translate-text" style="color:#ba1a1a; background:#fce8e6; border-color:#fad2cf;">
+        <div class="snap-translate-label" style="color:var(--snap-danger, #d93025);">Có Lỗi Xảy Ra</div>
+        <div class="snap-translate-text" style="color:var(--snap-danger-text, #ba1a1a); background:var(--snap-danger-bg, #fce8e6); border-color:var(--snap-danger-border, #fad2cf);">
           ${escapeHtml(errorMsg)}
         </div>
       </div>
@@ -468,6 +634,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function escapeAttr(str) {
+    return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function makeDraggable(elmnt, header) {
@@ -498,4 +668,11 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       document.onmousemove = null;
     }
   }
+
+  // Show onboarding on first use
+  chrome.storage.sync.get({ hasSeenOnboarding: false }, (data) => {
+    if (!data.hasSeenOnboarding) {
+      setTimeout(() => showOnboarding(), 500);
+    }
+  });
 }

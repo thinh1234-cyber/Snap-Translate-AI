@@ -1,102 +1,170 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Dictionary lưu nội dung của từng Not
     const nodeData = {
-      1: { title: "Nơ-ron: Giao diện (content.js)", desc: "Trạm gác tiền tuyến. Nằm trên mọi website. Lắng nghe hành vi kéo chuột bôi đen của người dùng." },
-      2: { title: "Nơ-ron: Background (Trạm Thu Phát)", desc: "Trạm không lưu (Routing Dispatcher). Nhận config Option và quyết định phân luồng tin nhắn rẽ qua Web ChatGPT, Server API hay bẻ lái xuống Local API ở localhost." },
-      3: { title: "Nơ-ron: Khối Robot (Automator)", desc: "Ký sinh trong Tab ChatGPT. Đi chung đường hầm với Web chính thống để vượt mọi tường lửa bảo mật." },
-      4: { title: "Hành vi: Bôi đen & Cắt", desc: "Tạo layer kính râm (overlay), tính toán góc tọa độ và cắt hình ảnh tĩnh bằng thuật toán không gian dpr." },
-      5: { title: "Hành vi: Render Canvas", desc: "Chuyển mảng pixel đã cắt thành mã Base64 cực nhẹ. Nêu dính chướng ngại là QR Mode, nó tự rẽ nhánh." },
-      6: { title: "Hiển thị: Popup Dịch", desc: "In kết quả siêu mượt trên màn hình dưới dạng Draggable Box. Tự đổi link thành thẻ màu xanh." },
-      7: { title: "Module Độc Lập: jsQR", desc: "Không cần Internet! Đây là nơ-ron Offline giải mã ma trận ảnh sang Text ngay trong 0.05 giây tại máy người dùng." },
-      8: { title: "Giải thuật: Retry 3 Vòng", desc: "Bảo hiểm 3 lớp của Background. Nếu gọi Tab ChatGPT không dậy, nó sẽ thử réo chuông 3 lần, mỗi lần 1.5s." },
-      9: { title: "Kỹ năng: Auto Wake-up", desc: "Đánh hơi thấy tab ChatGPT bị Chrome hút cạn RAM (Discarded) sẽ tự nạp điện (Reload) lại tab." },
-      11: { title: "Khoá luồng (Mutex Lock)", desc: "Cái khiên chặn spam. Biến `isAutomating` chặn đứng những người dùng táy máy bấm Snap 5 lần 1 lượt gây cháy bu-gi." },
-      12: { title: "Kỹ năng: Paste Ảo", desc: "Sử dụng API ClipboardEvent để lừa khung chat ChatGPT nghĩ rằng con người vừa bấm Ctrl+V dán ảnh." },
-      13: { title: "Giải thuật: Vòng đời Nút Send", desc: "Một thuật toán thiên tài không tốn CPU. Ngồi chờ nút Send mờ đi, và đến khi nó sáng lại (bấm được) => Kết thúc!" },
-      14: { title: "Kỹ năng: Bóc Lõi Markdown", desc: "Khinh bỉ text rác, đâm thẳng vào `<div class=\"markdown\">` bóc rút sự thật trần trụi. Sai số gần như 0." },
-      15: { title: "Thực thể: ChatGPT Web Brain", desc: "Máy chủ LLM nằm ở cổng Web Chat OpenAI." },
-      16: { title: "Thực thể: Đa Kênh (API/Local)", desc: "Trạm API kết nối Server lớn bằng Authorization Key hoặc gọi thẳng xuống Local Host (LM Studio / Ollama) siêu mượt." },
-      17: { title: "Tiền trạm: Tesseract OCR (Offline)", desc: "Phép màu thời gian: Bóc tách text khỏi hình ảnh trước khi gửi đi, giảm tải 1000 lần cho AI, không còn Analysis Image." }
+      1: {
+        title: "🌐 Content Script",
+        desc: "Chạy trên mọi tab web. Lắng nghe sự kiện kéo chuột, tạo overlay crop, xử lý OCR và hiển thị popup kết quả.",
+        flows: ["Nhận lệnh START_SNAP từ Background", "Tạo overlay kính râm cho crop", "Gửi ảnh chụp về Background", "Hiển thị popup kết quả dịch/QR"]
+      },
+      2: {
+        title: "🔀 Background Service Worker",
+        desc: "Trung tâm điều phối toàn bộ extension. Nhận message từ popup/content, routing đến OCR, Translation, ChatGPT hoặc Memory.",
+        flows: ["Routing CAPTURE_SCREEN → Content Script", "Routing TRANSLATE_IMAGE → Translation Engine", "Routing SAVE_SNAP → Memory Manager", "Routing OPEN_CHATGPT → ChatGPT Bridge", "Quản lý lifecycle của extension"]
+      },
+      3: {
+        title: "🤖 ChatGPT Automator",
+        desc: "Ký sinh trong Tab ChatGPT. Đi chung đường hầm với Web chính thống để vượt mọi tường lửa bảo mật.",
+        flows: ["Mở tab ChatGPT mới", "Inject prompt và paste ảnh ảo", "Đợi nút Send sáng lên", "Bóc rút kết quả từ DOM"]
+      },
+      4: {
+        title: "✂️ Crop & Overlay",
+        desc: "Tạo layer kính râm (overlay), tính toán góc tọa độ và cắt hình ảnh tĩnh bằng thuật toán không gian dpr.",
+        flows: ["Vẽ overlay bán trong suốt", "Theo dõi mouse drag", "Tính toán rect crop với DPR", "Trả về tọa độ cho Background"]
+      },
+      5: {
+        title: "🖼 Canvas → Base64",
+        desc: "Chuyển mảng pixel đã cắt thành mã Base64 cực nhẹ. Nếu dính chướng ngại là QR Mode, nó tự rẽ nhánh.",
+        flows: ["Tạo canvas từ rect crop", "Vẽ ảnh vào canvas", "Export sang PNG Base64", "Gửi về Background"]
+      },
+      6: {
+        title: "📱 Popup Kết quả",
+        desc: "In kết quả siêu mượt trên màn hình dưới dạng Draggable Box. Tự đổi link thành thẻ màu xanh.",
+        flows: ["Hiển thị OCR text", "Hiển thị bản dịch", "Nút Copy/Export", "Nút Dịch bằng ChatGPT"]
+      },
+      7: {
+        title: "📷 jsQR Engine (Offline)",
+        desc: "Không cần Internet! Đây là nơ-ron Offline giải mã ma trận ảnh sang Text ngay trong 0.05 giây tại máy người dùng.",
+        flows: ["Nhận imageData từ canvas", "Quét ma trận QR", "Trả về data string", "Lưu vào Memory"]
+      },
+      8: {
+        title: "🔁 Retry Logic",
+        desc: "Bảo hiểm 3 lớp của Background. Nếu gọi Tab ChatGPT không dậy, nó sẽ thử réo chuông 3 lần, mỗi lần 1.5s.",
+        flows: ["Thử inject script lần 1", "Retry lần 2 sau 1.5s", "Retry lần 3 sau 3s", "Báo lỗi nếu thất bại"]
+      },
+      9: {
+        title: "⚡ Auto Wake-up",
+        desc: "Đánh hơi thấy tab ChatGPT bị Chrome hút cạn RAM (Discarded) sẽ tự nạp điện (Reload) lại tab.",
+        flows: ["Kiểm tra tab.discarded", "Reload tab nếu cần", "Đợi tab load xong", "Gửi lại message"]
+      },
+      11: {
+        title: "🔒 Mutex Lock",
+        desc: "Cái khiên chặn spam. Biến isAutomating chặn đứng những người dùng táy máy bấm Snap 5 lần 1 lượt gây cháy bu-gi.",
+        flows: ["Set flag khi bắt đầu snap", "Chặn request trùng lặp", "Release flag khi hoàn tất", "Timeout sau 30s"]
+      },
+      12: {
+        title: "📋 Hack Paste Ảo",
+        desc: "Sử dụng API ClipboardEvent để lừa khung chat ChatGPT nghĩ rằng con người vừa bấm Ctrl+V dán ảnh.",
+        flows: ["Tạo ClipboardEvent giả", "Gán ảnh Base64 vào event", "Dispatch vào input ChatGPT", "Đợi ChatGPT xử lý"]
+      },
+      13: {
+        title: "🎯 Săn Nút Send",
+        desc: "Một thuật toán thiên tài không tốn CPU. Ngồi chờ nút Send mờ đi, và đến khi nó sáng lại (bấm được) => Kết thúc!",
+        flows: ["Poll DOM mỗi 200ms", "Kiểm tra nút Send disabled", "Khi enabled → click", "Trả về kết quả"]
+      },
+      14: {
+        title: "🔪 Bóc lõi .markdown",
+        desc: "Khinh bỉ text rác, đâm thẳng vào div class='markdown' bóc rút sự thật trần trụi. Sai số gần như 0.",
+        flows: ["Query selector div.markdown", "Lấy textContent", "Loại bỏ ký tự thừa", "Trả về translation"]
+      },
+      15: {
+        title: "🧠 ChatGPT Web Brain",
+        desc: "Máy chủ LLM nằm ở cổng Web Chat OpenAI. Xử lý vision + translation qua giao diện web.",
+        flows: ["Nhận ảnh + prompt", "Phân tích vision", "Trả về bản dịch", "Automator bóc rút kết quả"]
+      },
+      16: {
+        title: "🔗 API/Local Channel",
+        desc: "Trạm API kết nối Server lớn bằng Authorization Key hoặc gọi thẳng xuống Local Host (LM Studio / Ollama) siêu mượt.",
+        flows: ["Gửi POST /v1/chat/completions", "Nhận JSON response", "Parse translation", "Trả về Content Script"]
+      },
+      17: {
+        title: "🔍 Tesseract OCR",
+        desc: "Phép màu thời gian: Bóc tách text khỏi hình ảnh trước khi gửi đi, giảm tải 1000 lần cho AI, không còn Analysis Image.",
+        flows: ["Load WASM core", "Nhận diện ký tự (vie+eng)", "Trả về text string", "Lưu vào Memory"]
+      },
+      18: {
+        title: "💾 Memory Storage",
+        desc: "Lưu lịch sử snap vào chrome.storage.local. Hỗ trợ search, delete, copy. Tối đa 100 entries.",
+        flows: ["SAVE_SNAP: Thêm entry mới", "GET_SNAP_HISTORY: Lấy danh sách", "SEARCH: Lọc theo keyword", "DELETE/CLEAR: Xóa entry"]
+      }
     };
 
-    // Khởi tạo các điểm Nơ-ron
     const nodes = new vis.DataSet([
-      // Các nhân chính (Lớn)
-      { id: 1, label: "Giao diện (Content)", group: "uiMain", size: 45, shape: "hexagon" },
-      { id: 2, label: "Routing Control (Background)", group: "swMain", size: 55, shape: "hexagon" },
-      { id: 3, label: "Khối Robot (Automator)", group: "botMain", size: 45, shape: "hexagon" },
-      { id: 15, label: "ChatGPT Kết nối Web", group: "core", size: 50, shape: "diamond" },
-      { id: 16, label: "Kênh API Độc lập", group: "core", size: 50, shape: "diamond" },
-      
-      // Các nơ-ron chức năng UI
-      { id: 4, label: "Bôi đen & Cắt", group: "uiNode" },
-      { id: 5, label: "Chiết xuất Base64/Canvas", group: "uiNode" },
-      { id: 6, label: "Popup Hiển thị", group: "uiNode" },
-      { id: 7, label: "Lõi jsQR (Offline)", group: "offlineNode" },
-      { id: 17, label: "Tiền xử lý OCR", group: "offlineNode", size: 28 },
-      
-      // Các nơ-ron chức năng SW
-      { id: 8, label: "Vòng lặp Retry/Tiêm mã", group: "swNode" },
+      { id: 1, label: "Content Script", group: "uiMain", size: 40, shape: "hexagon" },
+      { id: 2, label: "Background SW", group: "swMain", size: 50, shape: "hexagon" },
+      { id: 3, label: "ChatGPT Bot", group: "botMain", size: 40, shape: "hexagon" },
+      { id: 15, label: "ChatGPT Web", group: "core", size: 45, shape: "diamond" },
+      { id: 16, label: "API/Local", group: "core", size: 45, shape: "diamond" },
+      { id: 18, label: "Memory", group: "memory", size: 35, shape: "box" },
+
+      { id: 4, label: "Crop & Overlay", group: "uiNode" },
+      { id: 5, label: "Canvas Base64", group: "uiNode" },
+      { id: 6, label: "Popup Result", group: "uiNode" },
+      { id: 7, label: "jsQR Offline", group: "offlineNode" },
+      { id: 17, label: "Tesseract OCR", group: "offlineNode", size: 28 },
+
+      { id: 8, label: "Retry Logic", group: "swNode" },
       { id: 9, label: "Auto Wake-up", group: "swNode" },
-      
-      // Các nơ-ron chức năng Bot
-      { id: 11, label: "Khóa luồng Mutex", group: "botNode" },
-      { id: 12, label: "Hack Paste Ảo", group: "botNode" },
-      { id: 13, label: "Săn Vòng đời Nút Gửi", group: "botNode" },
-      { id: 14, label: "Bóc lõi .markdown", group: "botNode" }
+
+      { id: 11, label: "Mutex Lock", group: "botNode" },
+      { id: 12, label: "Paste Ảo", group: "botNode" },
+      { id: 13, label: "Săn Nút Send", group: "botNode" },
+      { id: 14, label: "Bóc .markdown", group: "botNode" }
     ]);
 
-    // Thiết lập các Liên kết (Sợi dây thần kinh)
     const edges = new vis.DataSet([
-      { from: 4, to: 1, title: 'Kích hoạt' },
+      { from: 4, to: 1, arrows: 'to', title: 'Kích hoạt' },
       { from: 1, to: 5, arrows: 'to' },
-      { from: 5, to: 7, label: 'Mode QR', dashes: true, color: {color: '#00e676'} },
+      { from: 5, to: 7, arrows: 'to', label: 'QR Mode', dashes: true, color: {color: '#00e676'} },
       { from: 7, to: 6, arrows: 'to', label: '< 0.05s', color: {color: '#00e676'} },
-      
-      { from: 5, to: 17, arrows: 'to', label: 'Bật OCR', dashes: true, color: {color: '#00e676'} },
-      { from: 17, to: 2, arrows: 'to', label: 'Truyền Text Giảm Tải', color: {color: '#00e5ff'} },
-      
-      { from: 5, to: 2, arrows: 'to', label: 'Truyền Base64 Ảnh', color: {color: '#00e5ff'} },
-      { from: 2, to: 6, arrows: 'to', label: 'Kết quả Dịch', color: {color: '#ff4081'} },
-      
-      { from: 2, to: 9, arrows: 'to', label: 'Phân luồng Web' },
-      { from: 2, to: 16, arrows: 'to', label: 'Gọi API Cổng JSON', color: {color: '#ff3d00'} },
+      { from: 7, to: 18, arrows: 'to', color: {color: '#ffc107'} },
+
+      { from: 5, to: 17, arrows: 'to', label: 'OCR', dashes: true, color: {color: '#00e676'} },
+      { from: 17, to: 2, arrows: 'to', label: 'Text', color: {color: '#00e5ff'} },
+      { from: 17, to: 18, arrows: 'to', color: {color: '#ffc107'} },
+
+      { from: 5, to: 2, arrows: 'to', label: 'Base64', color: {color: '#00e5ff'} },
+      { from: 2, to: 6, arrows: 'to', label: 'Kết quả', color: {color: '#ff4081'} },
+
+      { from: 2, to: 9, arrows: 'to', label: 'Web Channel' },
+      { from: 2, to: 16, arrows: 'to', label: 'API Call', color: {color: '#ff3d00'} },
       { from: 16, to: 2, arrows: 'to', label: 'Response', color: {color: '#ff4081'} },
-      
+      { from: 16, to: 18, arrows: 'to', color: {color: '#ffc107'} },
+
       { from: 9, to: 8, arrows: 'to' },
-      { from: 8, to: 3, arrows: 'to', label: 'Bắn thông điệp Web', color: {color: '#e040fb'} },
-      
+      { from: 8, to: 3, arrows: 'to', label: 'Inject', color: {color: '#e040fb'} },
+
       { from: 3, to: 11, arrows: 'to' },
       { from: 11, to: 12, arrows: 'to' },
-      { from: 12, to: 15, arrows: 'to', label: 'Tương tác Web', color: {color: '#ffeb3b'} },
-      { from: 15, to: 13, arrows: 'to', label: 'Sinh cảnh DOM', color: {color: '#ffeb3b'} },
+      { from: 12, to: 15, arrows: 'to', label: 'Paste', color: {color: '#ffeb3b'} },
+      { from: 15, to: 13, arrows: 'to', label: 'DOM', color: {color: '#ffeb3b'} },
       { from: 13, to: 14, arrows: 'to' },
-      { from: 14, to: 2, arrows: 'to', label: 'Trả Ruột Dịch', color: {color: '#ff4081'} },
+      { from: 14, to: 2, arrows: 'to', label: 'Translation', color: {color: '#ff4081'} },
+
+      { from: 2, to: 18, arrows: 'to', label: 'Save Snap', color: {color: '#ffc107'} },
     ]);
 
-    // Cấu hình môi trường mạng mạng
     const container = document.getElementById('mynetwork');
     const data = { nodes: nodes, edges: edges };
     const options = {
       nodes: {
         shape: 'dot',
         size: 25,
-        font: { size: 14, color: '#ffffff', face: 'Segoe UI' },
+        font: { size: 13, color: '#ffffff', face: 'Segoe UI' },
         borderWidth: 2,
         shadow: true
       },
       edges: {
-        width: 2,
+        width: 1.5,
         shadow: true,
-        smooth: { type: 'continuous' },
-        font: { size: 12, color: '#a0aec0', face: 'Segoe UI', align: 'top' }
+        smooth: { type: 'cubicBezier' },
+        font: { size: 11, color: '#a0aec0', face: 'Segoe UI', align: 'top' }
       },
       groups: {
         uiMain: { color: { background: '#2196f3', border: '#1976d2' } },
         swMain: { color: { background: '#f50057', border: '#c51162' } },
         botMain: { color: { background: '#9c27b0', border: '#7b1fa2' } },
         core: { color: { background: '#ff3d00', border: '#dd2c00' } },
-        
+        memory: { color: { background: '#ffc107', border: '#ffa000' } },
+
         uiNode: { color: { background: '#64b5f6', border: '#42a5f5' } },
         swNode: { color: { background: '#ff80ab', border: '#ff4081' } },
         botNode: { color: { background: '#e1bee7', border: '#e040fb' } },
@@ -104,52 +172,105 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       physics: {
         forceAtlas2Based: {
-          gravitationalConstant: -100,
+          gravitationalConstant: -80,
           centralGravity: 0.005,
-          springLength: 200,
-          springConstant: 0.08
+          springLength: 180,
+          springConstant: 0.06
         },
         maxVelocity: 50,
         solver: 'forceAtlas2Based',
         timestep: 0.35,
-        stabilization: { iterations: 150 }
+        stabilization: { iterations: 200 }
       },
       interaction: {
         hover: true,
-        tooltipDelay: 200
+        tooltipDelay: 150,
+        zoomView: true,
+        dragView: true,
+        dragNodes: true
       }
     };
 
     const network = new vis.Network(container, data, options);
+    let physicsEnabled = true;
 
-    // Kịch bản khi Click vào 1 Nơ-ron
     network.on("click", function (params) {
+      const panelBody = document.getElementById('panel-body');
+
       if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
         const info = nodeData[nodeId];
-        
+
         if (info) {
-          document.getElementById('default-desc').style.display = 'none';
-          document.getElementById('dynamic-desc').style.display = 'block';
-          
-          document.getElementById('node-title').innerText = "🔹 " + info.title;
-          document.getElementById('node-desc').innerText = info.desc;
-          
-          // Phát sáng Nơ-ron box UI
+          const connectedEdges = network.getConnectedEdges(nodeId);
+          const edgeDetails = connectedEdges.map(edgeId => {
+            const edge = edges.get(edgeId);
+            const fromNode = nodes.get(edge.from);
+            const toNode = nodes.get(edge.to);
+            return `${fromNode.label} → ${toNode.label}${edge.label ? ` (${edge.label})` : ''}`;
+          });
+
+          panelBody.innerHTML = `
+            <b style="font-size:15px; color:#00e5ff;">${info.title}</b>
+            <p style="margin-top:8px;">${info.desc}</p>
+            <div style="margin-top:12px;">
+              <b style="font-size:12px; color:#718096;">DATA FLOWS:</b>
+              <ul class="flow-list">
+                ${info.flows.map(f => `<li>${f}</li>`).join('')}
+              </ul>
+            </div>
+            <div style="margin-top:12px;">
+              <b style="font-size:12px; color:#718096;">CONNECTIONS (${connectedEdges.length}):</b>
+              <ul class="flow-list">
+                ${edgeDetails.map(e => `<li>${e}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+
           const box = document.getElementById('info-box');
           box.style.boxShadow = '0 8px 30px rgba(0, 229, 255, 0.4)';
           setTimeout(() => {
-            box.style.boxShadow = '0 4px 20px rgba(0, 255, 255, 0.1)';
+            box.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
           }, 300);
         }
       } else {
-        document.getElementById('default-desc').style.display = 'block';
-        document.getElementById('dynamic-desc').style.display = 'none';
+        panelBody.innerHTML = `
+          <div class="default-desc">
+            <p>Hệ thống được biểu diễn dưới dạng <span class="highlight">Mạng Nơ-ron tương tác</span>.</p>
+            <p style="margin-top:8px;">👆 <b>Nhấn vào node</b> để xem chi tiết<br>🖱 <b>Cuộn chuột</b> để Zoom<br>✋ <b>Kéo thả</b> để xoay không gian</p>
+          </div>
+        `;
       }
     });
 
-    // Handle close button
-    document.getElementById("close-btn").addEventListener("click", () => {
-        window.close();
+    network.on("hoverNode", function(params) {
+      const node = nodes.get(params.node);
+      if (node) {
+        nodes.update({ id: params.node, borderWidth: 4 });
+      }
+    });
+
+    network.on("blurNode", function(params) {
+      nodes.update({ id: params.node, borderWidth: 2 });
+    });
+
+    document.getElementById("close-btn").addEventListener("click", () => window.close());
+    document.getElementById("close-panel-btn").addEventListener("click", () => {
+      document.getElementById('panel-body').innerHTML = `
+        <div class="default-desc">
+          <p>Hệ thống được biểu diễn dưới dạng <span class="highlight">Mạng Nơ-ron tương tác</span>.</p>
+          <p style="margin-top:8px;">👆 <b>Nhấn vào node</b> để xem chi tiết<br>🖱 <b>Cuộn chuột</b> để Zoom<br>✋ <b>Kéo thả</b> để xoay không gian</p>
+        </div>
+      `;
+    });
+
+    document.getElementById("reset-view-btn").addEventListener("click", () => {
+      network.fit();
+    });
+
+    document.getElementById("toggle-physics-btn").addEventListener("click", () => {
+      physicsEnabled = !physicsEnabled;
+      network.setOptions({ physics: { enabled: physicsEnabled } });
+      document.getElementById("toggle-physics-btn").textContent = physicsEnabled ? "⏸ Tạm dừng Physics" : "▶ Bật Physics";
     });
 });
