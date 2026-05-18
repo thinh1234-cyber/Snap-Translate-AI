@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkAuthBtn = document.getElementById("check-auth-btn");
   const openFullArchBtn = document.getElementById("open-full-arch-btn");
   const openEvolutionBtn = document.getElementById("open-evolution-btn");
+  const openShortcutsLink = document.getElementById("open-shortcuts-link");
 
   chrome.storage.sync.get({
     specialty: "",
@@ -106,6 +107,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   openEvolutionBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("html/evolution.html") });
+  });
+
+  openShortcutsLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
   });
 
   // Architecture preview nodes

@@ -12,8 +12,7 @@
       <div class="header-tabs">
         <button class="tab-btn active" data-tab="general">🔧 Chung</button>
         <button class="tab-btn" data-tab="memory">📝 Lịch sử</button>
-        <button class="tab-btn" data-tab="architecture">🏗 Kiến trúc</button>
-        <button class="tab-btn" data-tab="evolution">🚀 Evolution</button>
+        <button class="tab-btn" data-tab="architecture">🏗 System</button>
       </div>
     </div>
 
@@ -72,6 +71,22 @@
         <div class="section-title">📝 Custom Autoprompt</div>
         <p class="description">Thêm hướng dẫn tối ưu cho AI, ghép tự động vào lệnh mỗi khi chụp ảnh.</p>
         <textarea id="autoprompt-input" rows="4" placeholder="Ví dụ: Dịch với văn phong tự nhiên, ưu tiên thuật ngữ tiếng Việt..."></textarea>
+      </div>
+
+      <div class="card" id="shortcuts-card">
+        <div class="section-title">⌨️ Phím tắt</div>
+        <p class="description">Xem và tùy chỉnh phím tắt cho Snap & Translate AI.</p>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-label">Snap Dịch</span>
+            <span class="shortcut-key">Alt+X</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-label">Snap QR</span>
+            <span class="shortcut-key">Chưa có</span>
+          </div>
+        </div>
+        <a href="#" id="open-shortcuts-link" class="link">🔗 Mở cài đặt phím tắt Chrome</a>
       </div>
 
       <div class="card" id="web-auth-card">
@@ -144,10 +159,10 @@
       </div>
     </div>
 
-    <!-- ARCHITECTURE TAB -->
+    <!-- SYSTEM ARCHITECTURE TAB -->
     <div class="tab-content" id="tab-architecture">
       <div class="card" id="arch-card">
-        <div class="section-title">🏗 Kiến trúc Hệ thống</div>
+        <div class="section-title">🏗 System Architecture</div>
         <p class="description">Xem sơ đồ tương tác minh họa luồng hoạt động nội bộ của Extension.</p>
         <div id="arch-preview" class="arch-preview">
           <div class="arch-node" data-node="popup">📱 Popup</div>
@@ -162,16 +177,10 @@
         <div id="arch-info" class="arch-info">
           <p>👆 Nhấn vào từng node để xem chi tiết luồng dữ liệu</p>
         </div>
-        <button id="open-full-arch-btn" class="btn">🔍 Xem đầy đủ trong tab mới</button>
-      </div>
-    </div>
-
-    <!-- EVOLUTION TAB -->
-    <div class="tab-content" id="tab-evolution">
-      <div class="card" id="evolution-card">
-        <div class="section-title">🚀 Evolution Roadmap</div>
-        <p class="description">Xem lộ trình phát triển, phân tích SWOT, tính năng tương lai và chiến lược platform.</p>
-        <button id="open-evolution-btn" class="btn">🗺️ Mở Evolution Roadmap</button>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button id="open-full-arch-btn" class="btn">🔍 Xem đầy đủ trong tab mới</button>
+          <button id="open-evolution-btn" class="btn">🗺️ Mở Evolution Roadmap</button>
+        </div>
       </div>
     </div>
   </div>
