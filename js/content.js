@@ -227,32 +227,45 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         <div class="snap-translate-label">VĂN BẢN TRÍCH XUẤT (OCR)</div>
         <div class="snap-translate-text" style="white-space: pre-wrap;">${escapeHtml(displayText)}</div>
       </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:12px;">
-        <button id="snap-chatgpt-translate-btn" style="
-          background: linear-gradient(135deg, #10a37f, #1a7f5a);
-          color: white; border: none; padding: 9px 16px;
-          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
-          display: inline-flex; align-items: center; gap: 6px;
-          transition: 0.2s; box-shadow: 0 2px 8px rgba(16,163,127,0.35);
-        ">
-          <span>💬</span> Dịch bằng ChatGPT
-        </button>
-        <button id="snap-copy-ocr-btn" style="
-          background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
-          border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
-          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
-          display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
-        ">
-          <span>📋</span> Copy
-        </button>
-        <button id="snap-export-ocr-btn" style="
-          background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
-          border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
-          border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
-          display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
-        ">
-          <span>📤</span> Export
-        </button>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:12px;">
+        <div style="display:flex; gap:8px;">
+          <button id="snap-chatgpt-translate-btn" style="
+            background: linear-gradient(135deg, #10a37f, #1a7f5a);
+            color: white; border: none; padding: 9px 16px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: 0.2s; box-shadow: 0 2px 8px rgba(16,163,127,0.35);
+          ">
+            <span>💬</span> Dịch
+          </button>
+          <button id="snap-resnap-btn" style="
+            background: linear-gradient(135deg, #1a73e8, #1557b0);
+            color: white; border: none; padding: 9px 16px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: 0.2s; box-shadow: 0 2px 8px rgba(26,115,232,0.35);
+          ">
+            <span>🔄</span> Resnap
+          </button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="snap-copy-ocr-btn" style="
+            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+            border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+          ">
+            <span>📋</span> Copy
+          </button>
+          <button id="snap-export-ocr-btn" style="
+            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+            border: 1px solid var(--snap-border, #dadce0); padding: 9px 14px;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+            display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+          ">
+            <span>📤</span> Export
+          </button>
+        </div>
       </div>
     `;
 
@@ -271,6 +284,16 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         btn.innerHTML = "<span>⏳</span> Đang tải ChatGPT...";
         embedChatGPTIframe(ocrText, croppedDataUrl, btn);
       });
+    });
+
+    // Resnap button
+    document.getElementById("snap-resnap-btn").addEventListener("click", () => {
+      console.log("[Content] Resnap clicked");
+      if (document.getElementById("snap-translate-popup")) {
+        document.getElementById("snap-translate-popup").remove();
+      }
+      currentSnapMode = "translate";
+      initSnapOverlay();
     });
 
     // Copy button
@@ -571,21 +594,41 @@ if (typeof window.snapTranslateInjected === 'undefined') {
       <div class="snap-translate-section">
         <div class="snap-translate-label">${label}</div>
         <div class="snap-translate-text" style="color:${textColor}; font-weight:500; white-space: pre-wrap;">${safeTranslation}</div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <button class="snap-copy-btn" data-text="${escapeAttr(translation)}" style="
-            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
-            border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
-            cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
-          ">📋 Copy</button>
-          <button class="snap-export-btn" data-original="${escapeAttr(original || '')}" data-translation="${escapeAttr(translation)}" style="
-            background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
-            border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
-            cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
-          ">📤 Export</button>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:8px;">
+          <div style="display:flex; gap:8px;">
+            <button class="snap-resnap-btn" style="
+              background: linear-gradient(135deg, #1a73e8, #1557b0);
+              color: white; border: none; padding: 5px 12px; border-radius: 6px;
+              cursor: pointer; font-size: 12px; font-weight: 600;
+              display: inline-flex; align-items: center; gap: 4px;
+            ">🔄 Resnap</button>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="snap-copy-btn" data-text="${escapeAttr(translation)}" style="
+              background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+              border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
+              cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+            ">📋 Copy</button>
+            <button class="snap-export-btn" data-original="${escapeAttr(original || '')}" data-translation="${escapeAttr(translation)}" style="
+              background: var(--snap-bg-secondary, #f1f3f4); color: var(--snap-text, #3c4043);
+              border: 1px solid var(--snap-border, #dadce0); padding: 5px 12px; border-radius: 6px;
+              cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+            ">📤 Export</button>
+          </div>
         </div>
       </div>
     `;
     content.innerHTML = html;
+
+    content.querySelectorAll('.snap-resnap-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (document.getElementById("snap-translate-popup")) {
+          document.getElementById("snap-translate-popup").remove();
+        }
+        currentSnapMode = "translate";
+        initSnapOverlay();
+      });
+    });
 
     content.querySelectorAll('.snap-copy-btn').forEach(btn => {
       btn.addEventListener('click', () => {
