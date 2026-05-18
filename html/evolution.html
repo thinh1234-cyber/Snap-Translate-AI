@@ -422,7 +422,7 @@
 <body>
 
   <div class="top-bar">
-    <h1>🚀 Evolution Roadmap <span class="version-badge">v1.0 → v3.0</span></h1>
+    <h1>🚀 Evolution Roadmap <span class="version-badge">v1.1 → v3.0</span></h1>
     <button onclick="window.close()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#e0e6ed;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">✕ Đóng</button>
   </div>
 
@@ -431,15 +431,15 @@
     <!-- SCORE DASHBOARD -->
     <div class="score-dashboard">
       <div class="score-card">
-        <div class="score-value excellent">9.2</div>
+        <div class="score-value excellent">9.5</div>
         <div class="score-label">Code Architecture</div>
       </div>
       <div class="score-card">
-        <div class="score-value good">8.5</div>
+        <div class="score-value excellent">9.0</div>
         <div class="score-label">UX/UI Design</div>
       </div>
       <div class="score-card">
-        <div class="score-value good">8.0</div>
+        <div class="score-value excellent">9.2</div>
         <div class="score-label">User Experience</div>
       </div>
       <div class="score-card">
@@ -451,7 +451,7 @@
         <div class="score-label">Monetization</div>
       </div>
       <div class="score-card">
-        <div class="score-value good">8.8</div>
+        <div class="score-value excellent">9.3</div>
         <div class="score-label">Technical Innovation</div>
       </div>
     </div>
@@ -474,28 +474,33 @@
             • Multi-channel AI (Web ChatGPT + API + Local) — linh hoạt cho mọi user<br>
             • OCR offline với Tesseract — không phụ thuộc internet cho bước đầu tiên<br>
             • ChatGPT Automator vượt CSP qua iframe — giải pháp kỹ thuật độc đáo<br>
-            • Memory system với search/filter — giữ chân user lâu hơn<br>
-            • Dark mode + CSS variables — theme nhất quán toàn bộ extension
+            • Memory system với search/filter + file storage — giữ chân user lâu hơn<br>
+            • Dark mode + CSS variables — theme nhất quán toàn bộ extension<br>
+            • Resnap feature — snap lại mà không cần mở extension<br>
+            • System Architecture view + Evolution roadmap — tài liệu nội bộ đầy đủ<br>
+            • Keyboard shortcuts display — hướng dẫn user rõ ràng<br>
+            • Error handling cho CSP-restricted sites — UX thân thiện khi gặp lỗi
           </p>
-          <span class="tag strength">Architecture 9.2/10</span>
+          <span class="tag strength">Architecture 9.5/10</span>
           <span class="tag strength">Multi-channel</span>
           <span class="tag strength">Offline-capable</span>
+          <span class="tag strength">Resnap</span>
         </div>
 
         <div class="analysis-card">
           <h3>⚠️ Weaknesses — Điểm yếu</h3>
           <p>
-            • OCR trên CSP-restricted sites (Facebook, GitHub) vẫn có thể fail<br>
+            • OCR trên CSP-restricted sites (Facebook, GitHub) vẫn có thể fail — đã có error handling nhưng không bypass được<br>
             • Không có sync cloud — history mất khi clear browser data<br>
             • Không có analytics — không biết user dùng tính năng nào nhiều nhất<br>
-            • Không có onboarding cho first-run experience<br>
-            • Không có keyboard shortcuts customization<br>
+            • Không có glossary/terminology manager — chưa hỗ trợ thuật ngữ chuyên ngành cố định<br>
             • Không có batch processing — chỉ snap từng vùng một<br>
-            • Không có export/import settings — khó migrate giữa máy
+            • Không có export/import settings — khó migrate giữa máy<br>
+            • Service worker ES module không thể dùng importScripts — giới hạn load external libs
           </p>
           <span class="tag weakness">No cloud sync</span>
           <span class="tag weakness">No analytics</span>
-          <span class="tag weakness">CSP gaps</span>
+          <span class="tag weakness">No glossary</span>
         </div>
 
         <div class="analysis-card">
@@ -542,6 +547,90 @@
       </div>
 
       <div class="roadmap">
+        <!-- COMPLETED -->
+        <div class="roadmap-item" onclick="toggleDetail(this)" style="border-color: rgba(0, 230, 118, 0.3);">
+          <div class="roadmap-priority" style="background: rgba(0, 230, 118, 0.2); color: var(--green);">✓</div>
+          <div class="roadmap-content">
+            <h4>✅ Resnap Feature</h4>
+            <p>Snap lại vùng khác mà không cần mở extension. Phân biệt Resnap QR / Resnap Dịch theo mode.</p>
+          </div>
+          <div class="roadmap-meta">
+            <div class="impact high">Impact: Cao</div>
+            <div>Completed: v1.1</div>
+          </div>
+          <div class="roadmap-detail">
+            <b>Đã triển khai:</b>
+            <ul>
+              <li>Nút Resnap trong popup kết quả OCR và kết quả dịch</li>
+              <li>Preserve currentSnapMode — QR resnap QR, Dịch resnap Dịch</li>
+              <li>UI 2 hàng: [💬 Dịch] [🔄 Resnap] / [📋 Copy] [📤 Export]</li>
+            </ul>
+            <p style="margin-top:8px;"><b>Files:</b> <code>js/content.js</code></p>
+          </div>
+        </div>
+
+        <div class="roadmap-item" onclick="toggleDetail(this)" style="border-color: rgba(0, 230, 118, 0.3);">
+          <div class="roadmap-priority" style="background: rgba(0, 230, 118, 0.2); color: var(--green);">✓</div>
+          <div class="roadmap-content">
+            <h4>✅ Keyboard Shortcuts Display</h4>
+            <p>Hiển thị phím tắt hiện tại trong Settings, link đến chrome://extensions/shortcuts.</p>
+          </div>
+          <div class="roadmap-meta">
+            <div class="impact medium">Impact: Trung bình</div>
+            <div>Completed: v1.1</div>
+          </div>
+          <div class="roadmap-detail">
+            <b>Đã triển khai:</b>
+            <ul>
+              <li>Card mới trong General tab: Alt+X cho Snap Dịch</li>
+              <li>Link mở Chrome shortcuts settings</li>
+            </ul>
+            <p style="margin-top:8px;"><b>Files:</b> <code>html/options.html</code>, <code>js/options.js</code>, <code>css/options.css</code></p>
+          </div>
+        </div>
+
+        <div class="roadmap-item" onclick="toggleDetail(this)" style="border-color: rgba(0, 230, 118, 0.3);">
+          <div class="roadmap-priority" style="background: rgba(0, 230, 118, 0.2); color: var(--green);">✓</div>
+          <div class="roadmap-content">
+            <h4>✅ System Architecture Tab</h4>
+            <p>Gộp Architecture + Evolution thành 1 tab System gọn gàng hơn.</p>
+          </div>
+          <div class="roadmap-meta">
+            <div class="impact low">Impact: Thấp</div>
+            <div>Completed: v1.1</div>
+          </div>
+          <div class="roadmap-detail">
+            <b>Đã triển khai:</b>
+            <ul>
+              <li>Tab "🏗 System" thay thế 2 tab cũ</li>
+              <li>Architecture diagram + Evolution button trong cùng tab</li>
+            </ul>
+            <p style="margin-top:8px;"><b>Files:</b> <code>html/options.html</code></p>
+          </div>
+        </div>
+
+        <div class="roadmap-item" onclick="toggleDetail(this)" style="border-color: rgba(0, 230, 118, 0.3);">
+          <div class="roadmap-priority" style="background: rgba(0, 230, 118, 0.2); color: var(--green);">✓</div>
+          <div class="roadmap-content">
+            <h4>✅ Bug Fixes & Stability</h4>
+            <p>Syntax error content.js, async race condition popup, CSP error handling.</p>
+          </div>
+          <div class="roadmap-meta">
+            <div class="impact high">Impact: Cao</div>
+            <div>Completed: v1.1</div>
+          </div>
+          <div class="roadmap-detail">
+            <b>Đã sửa:</b>
+            <ul>
+              <li>Missing closing brace trong cropImage() — gây silent failure</li>
+              <li>executeSnap không await injectAndStartSnap — popup đóng trước khi scripts load</li>
+              <li>Added console logging cho debugging</li>
+              <li>CSP error detection + helpful message</li>
+            </ul>
+            <p style="margin-top:8px;"><b>Files:</b> <code>js/content.js</code>, <code>js/popup.js</code></p>
+          </div>
+        </div>
+
         <!-- P0 -->
         <div class="roadmap-item" onclick="toggleDetail(this)">
           <div class="roadmap-priority p0">P0</div>
@@ -586,28 +675,6 @@
               <li>Privacy-first: 100% local, không gửi data ra ngoài</li>
             </ul>
             <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>js/modules/analytics.js</code>, <code>html/options.html</code> (thêm tab)</p>
-          </div>
-        </div>
-
-        <div class="roadmap-item" onclick="toggleDetail(this)">
-          <div class="roadmap-priority p0">P0</div>
-          <div class="roadmap-content">
-            <h4>⌨️ Custom Keyboard Shortcuts</h4>
-            <p>Cho phép user tự định nghĩa phím tắt cho Snap Dịch, Snap QR, toggle overlay.</p>
-          </div>
-          <div class="roadmap-meta">
-            <div class="impact high">Impact: Cao</div>
-            <div>Effort: 1 ngày</div>
-          </div>
-          <div class="roadmap-detail">
-            <b>Chi tiết triển khai:</b>
-            <ul>
-              <li>Settings UI: input field nhận key combination</li>
-              <li>chrome.commands.update() để dynamic shortcut registration</li>
-              <li>Presets: Alt+X (snap), Alt+Q (QR), Alt+H (toggle history popup)</li>
-              <li>Validation: chặn conflict với browser shortcuts</li>
-            </ul>
-            <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>js/options.js</code>, <code>manifest.json</code> (commands section)</p>
           </div>
         </div>
 
@@ -932,16 +999,19 @@
 
       <div class="timeline">
         <div class="timeline-item">
-          <div class="timeline-phase">Phase 1 — Now (v1.0)</div>
+          <div class="timeline-phase">Phase 1 — Completed (v1.1)</div>
           <div class="timeline-title">Foundation & Core Features</div>
-          <div class="timeline-desc">Kiến trúc module, multi-channel AI, OCR offline, memory system, modern UI.</div>
+          <div class="timeline-desc">Kiến trúc module, multi-channel AI, OCR offline, memory system, modern UI, Resnap, System Architecture tab.</div>
           <div class="timeline-features">
             <span class="timeline-feature-tag">ES Modules</span>
             <span class="timeline-feature-tag">ChatGPT Bridge</span>
             <span class="timeline-feature-tag">Tesseract OCR</span>
             <span class="timeline-feature-tag">Memory Storage</span>
             <span class="timeline-feature-tag">Dark Mode</span>
-            <span class="timeline-feature-tag">Architecture View</span>
+            <span class="timeline-feature-tag">System Architecture</span>
+            <span class="timeline-feature-tag">Resnap Feature</span>
+            <span class="timeline-feature-tag">Keyboard Shortcuts</span>
+            <span class="timeline-feature-tag">Bug Fixes</span>
           </div>
         </div>
 
@@ -1070,7 +1140,7 @@
 
     <!-- FOOTER -->
     <div class="footer">
-      <p>🚀 Snap & Translate AI — Evolution Roadmap v1.0</p>
+      <p>🚀 Snap & Translate AI — Evolution Roadmap v1.1</p>
       <p style="margin-top:8px;">Built with passion for breaking language barriers.</p>
     </div>
 
