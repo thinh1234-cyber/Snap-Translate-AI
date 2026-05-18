@@ -9,29 +9,6 @@ import { prepChatGPTCookies, sendPromptToIframe } from './modules/ocr-manager.js
 import { saveSnap, getHistory, deleteSnap, clearHistory, searchHistory, setMaxEntries, getMaxEntriesSetting } from './modules/memory-manager.js';
 import { saveSnapFiles, autoDeleteOldFiles, deleteSavedFile, getSavedFilesList, clearSavedFiles } from './modules/file-saver.js';
 
-// ── OCR Handler ────────────────────────────────────────────
-async function handleOCR(dataUrl, mode, callback) {
-  try {
-    const tesseractUrl = chrome.runtime.getURL('lib/tesseract.min.js');
-    importScripts(tesseractUrl);
-
-    const worker = await Tesseract.createWorker("vie+eng", 1, {
-      workerPath: chrome.runtime.getURL('lib/worker.min.js'),
-      corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
-      langPath: chrome.runtime.getURL('lib/lang-data')
-    });
-
-    const result = await worker.recognize(dataUrl);
-    await worker.terminate();
-
-    const text = result.data.text.trim();
-    callback({ success: true, text: text });
-  } catch (err) {
-    console.error("[OCR] Error:", err);
-    callback({ success: false, error: err.message });
-  }
-}
-
 // ── Auto-delete old files on startup ──────────────────────
 autoDeleteOldFiles().then(result => {
   if (result.deleted > 0) {
@@ -61,10 +38,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case "TRANSLATE_IMAGE":
       handleTranslation(request.dataUrl, request.ocrText, sendResponse);
-      return true;
-
-    case "OCR_IMAGE":
-      handleOCR(request.dataUrl, request.mode, sendResponse);
       return true;
 
     case "SAVE_SNAP":

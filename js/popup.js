@@ -1,43 +1,59 @@
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("[Popup] DOMContentLoaded fired");
+  
   chrome.storage.sync.get({ theme: "light" }, (data) => {
     document.documentElement.setAttribute('data-theme', data.theme);
   });
 
-  function executeSnap(mode) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  async function executeSnap(mode) {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (tabs.length > 0) {
         let tab = tabs[0];
         if (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) {
           alert("Không thể chụp ảnh trên các trang cài đặt hệ thống của trình duyệt!");
           return;
         }
-        injectAndStartSnap(tab, mode);
+        try {
+          await injectAndStartSnap(tab, mode);
+        } catch (e) {
+          console.error("Snap failed:", e);
+        }
         window.close();
       }
     });
   }
 
   async function injectAndStartSnap(tab, mode) {
+    console.log("[Popup] Injecting scripts for mode:", mode);
     try {
       await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["css/content.css"] });
+      console.log("[Popup] CSS injected");
+      
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"]
       });
+      console.log("[Popup] Scripts injected");
+      
       chrome.tabs.sendMessage(tab.id, { action: "START_SNAP", mode: mode });
+      console.log("[Popup] START_SNAP message sent");
     } catch (e) {
-      console.error("Popup: Failed to inject scripts", e);
+      console.error("[Popup] Failed to inject scripts:", e);
       if (tab.url.startsWith("file://")) {
         alert("Hãy cấp quyền 'Allow access to file URLs' trong trang quản lý Extension để chụp các file PDF ngoại tuyến nhé!");
+      } else {
+        alert("Lỗi: Không thể khởi tạo snap. Hãy thử tải lại trang web.");
       }
     }
   }
 
   document.getElementById("snap-translate-btn").addEventListener("click", () => {
+    console.log("[Popup] Snap Translate button clicked");
     executeSnap("translate");
   });
 
   document.getElementById("snap-qr-btn").addEventListener("click", () => {
+    console.log("[Popup] Snap QR button clicked");
     executeSnap("qr");
   });
 

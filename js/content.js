@@ -9,6 +9,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "START_SNAP") {
+      console.log("[Content] START_SNAP received, mode:", request.mode);
       currentSnapMode = request.mode || "translate";
       initSnapOverlay();
     }
@@ -26,7 +27,11 @@ if (typeof window.snapTranslateInjected === 'undefined') {
   }
 
   function initSnapOverlay() {
-    if (document.getElementById("snap-translate-overlay")) return;
+    if (document.getElementById("snap-translate-overlay")) {
+      console.log("[Content] Overlay already exists, removing and recreating");
+      document.getElementById("snap-translate-overlay").remove();
+    }
+    console.log("[Content] Creating snap overlay");
 
     const container = document.fullscreenElement || document.body;
 
@@ -45,6 +50,8 @@ if (typeof window.snapTranslateInjected === 'undefined') {
     overlay.addEventListener("mouseup", onMouseUp);
 
     document.addEventListener("keydown", onKeyDown);
+    
+    console.log("[Content] Overlay created and attached to", container.tagName);
   }
 
   function onKeyDown(e) {
@@ -155,41 +162,56 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           return;
         }
 
-        updatePopupLoadingText("Đang bóc tách chữ...");
-        chrome.runtime.sendMessage({
-          action: "OCR_IMAGE",
-          dataUrl: croppedDataUrl,
-          mode: "translate"
-        }, async (response) => {
-          if (response && response.success) {
-            const extractedText = response.text;
+        updatePopupLoadingText("Đang bóc tách chữ (OCR)...");
 
-            if (!extractedText) {
-              updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
-              return;
-            }
-
-            chrome.runtime.sendMessage({
-              action: "SAVE_SNAP",
-              entry: { mode: "translate", ocrText: extractedText, translation: "", sourceUrl: window.location.href }
-            });
-            chrome.runtime.sendMessage({
-              action: "SAVE_SNAP_FILES",
-              dataUrl: croppedDataUrl,
-              textContent: extractedText,
-              mode: "translate"
-            });
-
-            showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
-          } else {
-            const errorMsg = response?.error || "OCR thất bại";
-            if (data.aiChannel === "web") {
-              showOcrResultWithTranslateBtn(null, croppedDataUrl);
-            } else {
-              updatePopupError(errorMsg + ". Thử dùng AI Vision thay thế.");
-            }
+        try {
+          if (typeof Tesseract === "undefined") {
+            throw new Error("Thư viện OCR chưa tải được. Trang này có thể chặn OCR.");
           }
-        });
+
+          const worker = await Tesseract.createWorker("vie+eng", 1, {
+            workerPath: chrome.runtime.getURL('lib/worker.min.js'),
+            corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
+            langPath: chrome.runtime.getURL('lib/lang-data'),
+            logger: m => {
+              if (m.status === "recognizing text") {
+                updatePopupLoadingText(`Đang đọc chữ... ${Math.round(m.progress * 100)}%`);
+              }
+            }
+          });
+
+          const result = await worker.recognize(croppedDataUrl);
+          await worker.terminate();
+          const extractedText = result.data.text.trim();
+
+          if (!extractedText) {
+            updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
+            return;
+          }
+
+          chrome.runtime.sendMessage({
+            action: "SAVE_SNAP",
+            entry: { mode: "translate", ocrText: extractedText, translation: "", sourceUrl: window.location.href }
+          });
+          chrome.runtime.sendMessage({
+            action: "SAVE_SNAP_FILES",
+            dataUrl: croppedDataUrl,
+            textContent: extractedText,
+            mode: "translate"
+          });
+
+          showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
+        } catch (err) {
+          console.error("[OCR] Error:", err);
+          const isCSPError = err.message.includes("eval") || err.message.includes("Script") || err.message.includes("worker");
+          if (isCSPError) {
+            updatePopupError("Trang web này chặn OCR (CSP). Dùng nút 'Dịch bằng ChatGPT' để dịch thay thế.");
+          } else if (data.aiChannel === "web") {
+            showOcrResultWithTranslateBtn(null, croppedDataUrl);
+          } else {
+            updatePopupError("Lỗi OCR: " + err.message);
+          }
+        }
     };
     img.src = dataUrl;
   }
