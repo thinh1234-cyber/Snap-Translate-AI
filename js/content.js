@@ -212,6 +212,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
             updatePopupError("Lỗi OCR: " + err.message);
           }
         }
+      });
     };
     img.src = dataUrl;
   }
