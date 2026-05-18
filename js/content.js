@@ -245,7 +245,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
             display: inline-flex; align-items: center; gap: 6px;
             transition: 0.2s; box-shadow: 0 2px 8px rgba(26,115,232,0.35);
           ">
-            <span>🔄</span> Resnap
+            <span>🔄</span> ${currentSnapMode === "qr" ? "Resnap QR" : "Resnap Dịch"}
           </button>
         </div>
         <div style="display:flex; gap:8px;">
@@ -288,11 +288,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
     // Resnap button
     document.getElementById("snap-resnap-btn").addEventListener("click", () => {
-      console.log("[Content] Resnap clicked");
+      console.log("[Content] Resnap clicked, mode:", currentSnapMode);
       if (document.getElementById("snap-translate-popup")) {
         document.getElementById("snap-translate-popup").remove();
       }
-      currentSnapMode = "translate";
       initSnapOverlay();
     });
 
@@ -601,7 +600,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               color: white; border: none; padding: 5px 12px; border-radius: 6px;
               cursor: pointer; font-size: 12px; font-weight: 600;
               display: inline-flex; align-items: center; gap: 4px;
-            ">🔄 Resnap</button>
+            ">🔄 ${currentSnapMode === "qr" ? "Resnap QR" : "Resnap Dịch"}</button>
           </div>
           <div style="display:flex; gap:8px;">
             <button class="snap-copy-btn" data-text="${escapeAttr(translation)}" style="
