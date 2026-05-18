@@ -126,6 +126,8 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, rect.left * dpr, rect.top * dpr, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
 
+        const croppedDataUrl = canvas.toDataURL("image/png");
+
         if (data.mode === "qr") {
           try {
             const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
@@ -151,7 +153,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           return;
         }
 
-        const croppedDataUrl = canvas.toDataURL("image/png");
         let extractedText = null;
 
         if (data.useOcr) {
