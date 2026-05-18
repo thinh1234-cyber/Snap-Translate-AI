@@ -43,7 +43,7 @@ async function removeSavedFile(id) {
   return filtered;
 }
 
-async function clearSavedFiles() {
+export async function clearSavedFiles() {
   await chrome.storage.local.set({ [FILE_SAVE_KEY]: [] });
   return [];
 }
