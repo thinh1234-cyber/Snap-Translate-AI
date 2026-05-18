@@ -422,7 +422,7 @@
 <body>
 
   <div class="top-bar">
-    <h1>🚀 Evolution Roadmap <span class="version-badge">v1.1 → v3.0</span></h1>
+    <h1>🚀 Evolution Roadmap <span class="version-badge">v1.2 → v3.0</span></h1>
     <button onclick="window.close()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#e0e6ed;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">✕ Đóng</button>
   </div>
 
@@ -431,27 +431,27 @@
     <!-- SCORE DASHBOARD -->
     <div class="score-dashboard">
       <div class="score-card">
-        <div class="score-value excellent">9.5</div>
+        <div class="score-value excellent">9.7</div>
         <div class="score-label">Code Architecture</div>
       </div>
       <div class="score-card">
-        <div class="score-value excellent">9.0</div>
+        <div class="score-value excellent">9.5</div>
         <div class="score-label">UX/UI Design</div>
       </div>
       <div class="score-card">
-        <div class="score-value excellent">9.2</div>
+        <div class="score-value excellent">9.6</div>
         <div class="score-label">User Experience</div>
       </div>
       <div class="score-card">
-        <div class="score-value warning">6.5</div>
+        <div class="score-value good">7.5</div>
         <div class="score-label">Market Position</div>
       </div>
       <div class="score-card">
-        <div class="score-value warning">7.0</div>
+        <div class="score-value good">8.0</div>
         <div class="score-label">Monetization</div>
       </div>
       <div class="score-card">
-        <div class="score-value excellent">9.3</div>
+        <div class="score-value excellent">9.5</div>
         <div class="score-label">Technical Innovation</div>
       </div>
     </div>
@@ -476,31 +476,36 @@
             • ChatGPT Automator vượt CSP qua iframe — giải pháp kỹ thuật độc đáo<br>
             • Memory system với search/filter + file storage — giữ chân user lâu hơn<br>
             • Dark mode + CSS variables — theme nhất quán toàn bộ extension<br>
-            • Resnap feature — snap lại mà không cần mở extension<br>
+            • Resnap feature — snap lại mà không cần mở extension, phân biệt QR/Dịch<br>
             • System Architecture view + Evolution roadmap — tài liệu nội bộ đầy đủ<br>
             • Keyboard shortcuts display — hướng dẫn user rõ ràng<br>
-            • Error handling cho CSP-restricted sites — UX thân thiện khi gặp lỗi
+            • Error handling cho CSP-restricted sites — UX thân thiện khi gặp lỗi<br>
+            • 2-column settings layout — dễ nhìn, chuyên nghiệp<br>
+            • Cloud Sync & Backup (JSON import/export) — migrate giữa máy dễ dàng<br>
+            • Analytics Dashboard — thống kê snap theo tuần/tháng/tất cả<br>
+            • Glossary & Terminology Manager — quản lý thuật ngữ chuyên ngành, custom category
           </p>
-          <span class="tag strength">Architecture 9.5/10</span>
+          <span class="tag strength">Architecture 9.7/10</span>
           <span class="tag strength">Multi-channel</span>
           <span class="tag strength">Offline-capable</span>
           <span class="tag strength">Resnap</span>
+          <span class="tag strength">Analytics</span>
+          <span class="tag strength">Glossary</span>
         </div>
 
         <div class="analysis-card">
           <h3>⚠️ Weaknesses — Điểm yếu</h3>
           <p>
             • OCR trên CSP-restricted sites (Facebook, GitHub) vẫn có thể fail — đã có error handling nhưng không bypass được<br>
-            • Không có sync cloud — history mất khi clear browser data<br>
-            • Không có analytics — không biết user dùng tính năng nào nhiều nhất<br>
-            • Không có glossary/terminology manager — chưa hỗ trợ thuật ngữ chuyên ngành cố định<br>
+            • Không có sync cloud tự động — chỉ có export/import JSON thủ công<br>
             • Không có batch processing — chỉ snap từng vùng một<br>
-            • Không có export/import settings — khó migrate giữa máy<br>
-            • Service worker ES module không thể dùng importScripts — giới hạn load external libs
+            • Service worker ES module không thể dùng importScripts — giới hạn load external libs<br>
+            • Glossary chưa auto-apply vào translation prompt — cần tích hợp thêm<br>
+            • Không có real-time analytics chart — chỉ có số liệu thống kê cơ bản
           </p>
-          <span class="tag weakness">No cloud sync</span>
-          <span class="tag weakness">No analytics</span>
-          <span class="tag weakness">No glossary</span>
+          <span class="tag weakness">No cloud auto-sync</span>
+          <span class="tag weakness">No batch processing</span>
+          <span class="tag weakness">Glossary not in prompt</span>
         </div>
 
         <div class="analysis-card">
@@ -631,12 +636,35 @@
           </div>
         </div>
 
+        <div class="roadmap-item" onclick="toggleDetail(this)" style="border-color: rgba(0, 230, 118, 0.3);">
+          <div class="roadmap-priority" style="background: rgba(0, 230, 118, 0.2); color: var(--green);">✓</div>
+          <div class="roadmap-content">
+            <h4>✅ Settings UI Overhaul (v1.2)</h4>
+            <p>2-column layout, Cloud Sync JSON import/export, Analytics Dashboard, Glossary tab.</p>
+          </div>
+          <div class="roadmap-meta">
+            <div class="impact high">Impact: Cao</div>
+            <div>Completed: v1.2</div>
+          </div>
+          <div class="roadmap-detail">
+            <b>Đã triển khai:</b>
+            <ul>
+              <li>2-column grid layout cho General tab — dễ nhìn hơn</li>
+              <li>Export/Import Settings JSON (specialty, autoprompt, aiChannel, API config, theme, glossary)</li>
+              <li>Export/Import Memory JSON — backup lịch sử snap</li>
+              <li>Analytics Dashboard: filter theo Tuần/Tháng/Tất cả, thống kê snap count, mode split, ký tự đã dịch</li>
+              <li>Glossary tab: CRUD thuật ngữ, custom category, search, CSV import/export, toggle enable/disable</li>
+            </ul>
+            <p style="margin-top:8px;"><b>Files:</b> <code>html/options.html</code>, <code>js/options.js</code>, <code>css/options.css</code></p>
+          </div>
+        </div>
+
         <!-- P0 -->
         <div class="roadmap-item" onclick="toggleDetail(this)">
           <div class="roadmap-priority p0">P0</div>
           <div class="roadmap-content">
-            <h4>🔄 Cloud Sync & Backup</h4>
-            <p>Đồng bộ history, settings, glossary qua nhiều thiết bị. Export/import JSON.</p>
+            <h4>🔄 Auto Cloud Sync</h4>
+            <p>Đồng bộ tự động settings + glossary + memory qua Firebase/Google Drive. Không cần export/import thủ công.</p>
           </div>
           <div class="roadmap-meta">
             <div class="impact high">Impact: Cao</div>
@@ -645,63 +673,61 @@
           <div class="roadmap-detail">
             <b>Chi tiết triển khai:</b>
             <ul>
-              <li>Dùng Google Drive API hoặc Firebase Firestore để sync</li>
+              <li>Dùng Google Drive API hoặc Firebase Firestore để sync tự động</li>
               <li>Auto-backup mỗi 24h vào chrome.storage.local + cloud</li>
-              <li>Nút Export/Import JSON trong Settings</li>
               <li>Conflict resolution: last-write-wins với timestamp</li>
               <li>Encryption: AES-256 cho dữ liệu nhạy cảm (API keys)</li>
+              <li>Manual trigger: nút "Sync Now" trong Settings</li>
             </ul>
-            <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>js/modules/sync-manager.js</code>, <code>js/options.js</code></p>
+            <p style="margin-top:8px;"><b>Files cần tạo:</b> <code>js/modules/sync-manager.js</code></p>
           </div>
         </div>
 
         <div class="roadmap-item" onclick="toggleDetail(this)">
           <div class="roadmap-priority p0">P0</div>
           <div class="roadmap-content">
-            <h4>📊 Analytics Dashboard</h4>
-            <p>Theo dõi usage patterns: số snap/ngày, ngôn ngữ phổ biến, channel preference.</p>
+            <h4>📊 Advanced Analytics with Charts</h4>
+            <p>Biểu đồ Chart.js cho usage patterns: line chart theo thời gian, pie chart cho mode split, bar chart cho specialty.</p>
           </div>
           <div class="roadmap-meta">
-            <div class="impact high">Impact: Cao</div>
+            <div class="impact medium">Impact: Trung bình</div>
             <div>Effort: 2 ngày</div>
           </div>
           <div class="roadmap-detail">
             <b>Chi tiết triển khai:</b>
             <ul>
-              <li>Local analytics: đếm snap count, language pairs, mode usage</li>
-              <li>Dashboard trong Settings tab mới với chart (Chart.js)</li>
-              <li>Weekly/monthly stats: "Tuần này bạn đã snap 47 lần, dịch 12,000 từ"</li>
+              <li>Chart.js CDN cho line/pie/bar charts</li>
+              <li>Daily/weekly/monthly trends</li>
               <li>Insights: "Bạn dùng API channel 80% — gợi ý mua gói premium"</li>
               <li>Privacy-first: 100% local, không gửi data ra ngoài</li>
             </ul>
-            <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>js/modules/analytics.js</code>, <code>html/options.html</code> (thêm tab)</p>
+            <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>html/options.html</code>, <code>js/options.js</code></p>
           </div>
         </div>
 
-        <!-- P1 -->
         <div class="roadmap-item" onclick="toggleDetail(this)">
-          <div class="roadmap-priority p1">P1</div>
+          <div class="roadmap-priority p0">P0</div>
           <div class="roadmap-content">
-            <h4>📚 Glossary & Terminology Manager</h4>
-            <p>Quản lý bảng thuật ngữ chuyên ngành. Auto-replace khi dịch.</p>
+            <h4>📚 Glossary Auto-Apply in Translation</h4>
+            <p>Tự động inject glossary terms vào translation prompt để AI dịch nhất quán.</p>
           </div>
           <div class="roadmap-meta">
             <div class="impact high">Impact: Cao</div>
-            <div>Effort: 3 ngày</div>
+            <div>Effort: 1 ngày</div>
           </div>
           <div class="roadmap-detail">
             <b>Chi tiết triển khai:</b>
             <ul>
-              <li>CRUD glossary entries: term → translation, category, notes</li>
-              <li>Import/export CSV cho glossary</li>
-              <li>Auto-apply glossary vào translation prompt: "Dịch các term sau: {...}"</li>
-              <li>Shared glossary templates: IT, Medical, Legal, Finance</li>
-              <li>Fuzzy matching: "Kubernetes" match với "k8s", "K8S"</li>
+              <li>Load glossary từ chrome.storage.sync khi translation triggered</li>
+              <li>Inject vào prompt: "[GLOSSARY] Use these exact translations: API → Giao diện API, database → Cơ sở dữ liệu"</li>
+              <li>Filter chỉ active terms (enabled === true)</li>
+              <li>Apply cho cả API channel và ChatGPT web channel</li>
             </ul>
-            <p style="margin-top:8px;"><b>Files cần tạo:</b> <code>js/modules/glossary-manager.js</code>, <code>html/glossary.html</code></p>
+            <p style="margin-top:8px;"><b>Files cần sửa:</b> <code>js/modules/translation-engine.js</code>, <code>js/modules/ocr-manager.js</code>, <code>js/content.js</code></p>
           </div>
         </div>
 
+        <!-- P1 -->
         <div class="roadmap-item" onclick="toggleDetail(this)">
           <div class="roadmap-priority p1">P1</div>
           <div class="roadmap-content">
@@ -999,9 +1025,9 @@
 
       <div class="timeline">
         <div class="timeline-item">
-          <div class="timeline-phase">Phase 1 — Completed (v1.1)</div>
+          <div class="timeline-phase">Phase 1 — Completed (v1.2)</div>
           <div class="timeline-title">Foundation & Core Features</div>
-          <div class="timeline-desc">Kiến trúc module, multi-channel AI, OCR offline, memory system, modern UI, Resnap, System Architecture tab.</div>
+          <div class="timeline-desc">Kiến trúc module, multi-channel AI, OCR offline, memory system, modern UI, Resnap, System Architecture, Settings overhaul, Analytics, Glossary.</div>
           <div class="timeline-features">
             <span class="timeline-feature-tag">ES Modules</span>
             <span class="timeline-feature-tag">ChatGPT Bridge</span>
@@ -1012,18 +1038,21 @@
             <span class="timeline-feature-tag">Resnap Feature</span>
             <span class="timeline-feature-tag">Keyboard Shortcuts</span>
             <span class="timeline-feature-tag">Bug Fixes</span>
+            <span class="timeline-feature-tag">2-Column Settings</span>
+            <span class="timeline-feature-tag">Cloud Sync JSON</span>
+            <span class="timeline-feature-tag">Analytics Dashboard</span>
+            <span class="timeline-feature-tag">Glossary Manager</span>
           </div>
         </div>
 
         <div class="timeline-item">
           <div class="timeline-phase">Phase 2 — Q2 2026 (v1.5)</div>
-          <div class="timeline-title">User Experience & Retention</div>
-          <div class="timeline-desc">Cloud sync, analytics, custom shortcuts, glossary manager, notifications.</div>
+          <div class="timeline-title">Automation & Intelligence</div>
+          <div class="timeline-desc">Auto cloud sync, glossary auto-apply in prompts, advanced charts, smart notifications.</div>
           <div class="timeline-features">
-            <span class="timeline-feature-tag">Cloud Sync</span>
-            <span class="timeline-feature-tag">Analytics Dashboard</span>
-            <span class="timeline-feature-tag">Custom Shortcuts</span>
-            <span class="timeline-feature-tag">Glossary Manager</span>
+            <span class="timeline-feature-tag">Auto Cloud Sync</span>
+            <span class="timeline-feature-tag">Glossary Auto-Apply</span>
+            <span class="timeline-feature-tag">Chart.js Analytics</span>
             <span class="timeline-feature-tag">Smart Notifications</span>
           </div>
         </div>
@@ -1140,7 +1169,7 @@
 
     <!-- FOOTER -->
     <div class="footer">
-      <p>🚀 Snap & Translate AI — Evolution Roadmap v1.1</p>
+      <p>🚀 Snap & Translate AI — Evolution Roadmap v1.2</p>
       <p style="margin-top:8px;">Built with passion for breaking language barriers.</p>
     </div>
 
