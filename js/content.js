@@ -155,28 +155,14 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           return;
         }
 
-        let extractedText = null;
-
-        if (data.useOcr) {
-          updatePopupLoadingText("Đang bóc tách chữ Offline (Tesseract)...");
-          try {
-            if (typeof Tesseract === "undefined") throw new Error("Chưa nạp được thư viện lõi Tesseract");
-
-            const worker = await Tesseract.createWorker("vie+eng", 1, {
-              workerPath: chrome.runtime.getURL('lib/worker.min.js'),
-              corePath: chrome.runtime.getURL('lib/tesseract-core.wasm.js'),
-              langPath: chrome.runtime.getURL('lib/lang-data'),
-              logger: m => {
-                if (m.status === "recognizing text") {
-                  updatePopupLoadingText(`Đang đọc ảnh OCR ... ${Math.round(m.progress * 100)}%`);
-                } else {
-                  updatePopupLoadingText(`Đang tải lõi OCR...`);
-                }
-              }
-            });
-            const ret = await worker.recognize(croppedDataUrl);
-            await worker.terminate();
-            extractedText = ret.data.text.trim();
+        updatePopupLoadingText("Đang bóc tách chữ...");
+        chrome.runtime.sendMessage({
+          action: "OCR_IMAGE",
+          dataUrl: croppedDataUrl,
+          mode: "translate"
+        }, async (response) => {
+          if (response && response.success) {
+            const extractedText = response.text;
 
             if (!extractedText) {
               updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
@@ -193,12 +179,17 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               textContent: extractedText,
               mode: "translate"
             });
-          } catch (err) {
-            console.error(err);
-            updatePopupError("Lỗi OCR: " + err.message);
-            return;
+
+            showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
+          } else {
+            const errorMsg = response?.error || "OCR thất bại";
+            if (data.aiChannel === "web") {
+              showOcrResultWithTranslateBtn(null, croppedDataUrl);
+            } else {
+              updatePopupError(errorMsg + ". Thử dùng AI Vision thay thế.");
+            }
           }
-        }
+        });
 
         if (data.aiChannel === "web") {
           showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
