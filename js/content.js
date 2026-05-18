@@ -138,10 +138,12 @@ if (typeof window.snapTranslateInjected === 'undefined') {
         const croppedDataUrl = canvas.toDataURL("image/png");
 
         if (currentSnapMode === "qr") {
+          console.log("[Content] QR branch entered, mode:", currentSnapMode);
           try {
             const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (code) {
+              console.log("[Content] QR found, showing result, mode:", currentSnapMode);
               updatePopupResult("Tìm thấy Mã QR:", code.data);
               chrome.runtime.sendMessage({
                 action: "SAVE_SNAP",
@@ -621,10 +623,10 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
     content.querySelectorAll('.snap-resnap-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        console.log("[Content] Resnap clicked from result, mode:", currentSnapMode);
         if (document.getElementById("snap-translate-popup")) {
           document.getElementById("snap-translate-popup").remove();
         }
-        currentSnapMode = "translate";
         initSnapOverlay();
       });
     });
