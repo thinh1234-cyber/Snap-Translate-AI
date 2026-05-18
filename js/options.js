@@ -357,7 +357,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("export-settings-btn").addEventListener("click", () => {
-    chrome.storage.sync.get(null, (data) => {
+    chrome.storage.sync.get({
+      specialty: "",
+      autoprompt: "Ngắn gọn súc tích, không giải thích thêm.",
+      useOcr: true,
+      aiChannel: "web",
+      apiUrl: "",
+      apiModel: "",
+      apiKey: "",
+      theme: "light",
+      memoryLimit: 50,
+      hasSeenOnboarding: false,
+      glossary: []
+    }, (data) => {
       downloadJSON(data, `snap-settings-${dateStr()}.json`);
     });
   });

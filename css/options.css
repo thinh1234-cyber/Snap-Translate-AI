@@ -420,7 +420,7 @@ input[type="text"]:focus, textarea:focus, select:focus {
 }
 
 /* 2-Column Layout for General Tab */
-#tab-general {
+#tab-general.active {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
