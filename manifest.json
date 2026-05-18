@@ -42,12 +42,6 @@
       "js": ["js/chatgpt_automator.js"],
       "all_frames": true,
       "run_at": "document_start"
-    },
-    {
-      "matches": ["<all_urls>"],
-      "js": ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"],
-      "css": ["css/content.css"],
-      "run_at": "document_idle"
     }
   ],
   "commands": {
@@ -64,6 +58,8 @@
     {
       "resources": [
         "css/content.css",
+        "lib/tesseract.min.js",
+        "lib/jsQR.js",
         "lib/worker.min.js",
         "lib/tesseract-core.wasm.js",
         "lib/lang-data/eng.traineddata.gz",

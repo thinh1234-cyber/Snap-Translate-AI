@@ -92,7 +92,7 @@
     <div class="tab-content" id="tab-memory">
       <div class="card" id="memory-card">
         <div class="section-title">📝 Lịch sử Snap</div>
-        <p class="description">Xem lại các lần chụp và dịch trước đây. Tối đa 100 entries.</p>
+        <p class="description">Xem lại các lần chụp và dịch trước đây.</p>
 
         <div class="memory-controls">
           <input type="text" id="memory-search" placeholder="🔍 Tìm kiếm trong lịch sử...">
@@ -103,10 +103,24 @@
           <span class="stat">📊 Tổng: <b id="memory-count">0</b></span>
           <span class="stat">🌍 Dịch: <b id="memory-translate-count">0</b></span>
           <span class="stat">📷 QR: <b id="memory-qr-count">0</b></span>
+          <span class="stat">💾 Giới hạn: <b id="memory-limit-display">50</b></span>
         </div>
 
         <div id="memory-list">
           <div class="memory-empty">📭 Đang tải lịch sử...</div>
+        </div>
+      </div>
+
+      <div class="card" id="memory-settings-card">
+        <div class="section-title">⚙️ Cài đặt Memory</div>
+        <p class="description">Điều chỉnh giới hạn số lượng entry lưu trữ để tránh làm nặng dung lượng.</p>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label for="memory-limit-input" style="font-size:14px; font-weight:500;">Tối đa:</label>
+          <input type="number" id="memory-limit-input" min="10" max="500" step="10" style="width:100px;">
+          <span style="font-size:13px; color:var(--snap-options-desc, #5f6368);">entries (10-500)</span>
+        </div>
+        <div style="margin-top:8px; font-size:12px; color:var(--snap-options-desc, #5f6368);">
+          💡 Khi vượt quá giới hạn, các entry cũ nhất sẽ tự động bị xóa.
         </div>
       </div>
     </div>

@@ -142,6 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const memoryCount = document.getElementById("memory-count");
   const memoryTranslateCount = document.getElementById("memory-translate-count");
   const memoryQrCount = document.getElementById("memory-qr-count");
+  const memoryLimitDisplay = document.getElementById("memory-limit-display");
+  const memoryLimitInput = document.getElementById("memory-limit-input");
 
   function loadMemoryHistory(query = "") {
     const action = query ? "SEARCH_SNAP_HISTORY" : "GET_SNAP_HISTORY";
@@ -205,6 +207,15 @@ document.addEventListener("DOMContentLoaded", () => {
     memoryQrCount.textContent = entries.filter(e => e.mode === "qr").length;
   }
 
+  function loadMemoryLimit() {
+    chrome.runtime.sendMessage({ action: "GET_MEMORY_LIMIT" }, (limit) => {
+      if (!chrome.runtime.lastError && limit) {
+        memoryLimitDisplay.textContent = limit;
+        memoryLimitInput.value = limit;
+      }
+    });
+  }
+
   function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -228,10 +239,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  memoryLimitInput.addEventListener("change", () => {
+    let val = parseInt(memoryLimitInput.value, 10);
+    if (isNaN(val) || val < 10) val = 10;
+    if (val > 500) val = 500;
+    memoryLimitInput.value = val;
+
+    chrome.runtime.sendMessage({ action: "SET_MEMORY_LIMIT", limit: val }, (res) => {
+      if (res && res.success) {
+        memoryLimitDisplay.textContent = res.limit;
+        loadMemoryHistory();
+      }
+    });
+  });
+
   // Load memory on first tab switch
   const observer = new MutationObserver(() => {
     if (document.getElementById("tab-memory").classList.contains("active")) {
       loadMemoryHistory();
+      loadMemoryLimit();
       observer.disconnect();
     }
   });

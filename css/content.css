@@ -1,4 +1,47 @@
-/* Lớp phủ màn hình để chọn vùng ảnh */
+/* ═══════════════════════════════════════════════════════════
+   CONTENT.CSS — Dark Mode Support via CSS Variables
+   ═══════════════════════════════════════════════════════════ */
+
+/* Light Mode (default) */
+:root {
+  --snap-bg-primary: #ffffff;
+  --snap-bg-secondary: #f8f9fa;
+  --snap-text: #202124;
+  --snap-text-secondary: #5f6368;
+  --snap-border: #dadce0;
+  --snap-primary: #1a73e8;
+  --snap-success: #0f9d58;
+  --snap-danger: #d93025;
+  --snap-danger-text: #ba1a1a;
+  --snap-danger-bg: #fce8e6;
+  --snap-danger-border: #fad2cf;
+  --snap-link: #1a73e8;
+  --snap-shadow: rgba(0, 0, 0, 0.15);
+  --snap-overlay-bg: rgba(0, 0, 0, 0.5);
+  --snap-selection-bg: rgba(11, 87, 208, 0.1);
+  --snap-selection-border: #0b57d0;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  --snap-bg-primary: #1e1e1e;
+  --snap-bg-secondary: #2d2d2d;
+  --snap-text: #e8eaed;
+  --snap-text-secondary: #9aa0a6;
+  --snap-border: #5f6368;
+  --snap-primary: #8ab4f8;
+  --snap-success: #81c995;
+  --snap-danger: #f28b82;
+  --snap-danger-text: #f28b82;
+  --snap-danger-bg: #3c2222;
+  --snap-danger-border: #5c3a3a;
+  --snap-link: #8ab4f8;
+  --snap-shadow: rgba(0, 0, 0, 0.4);
+  --snap-overlay-bg: rgba(0, 0, 0, 0.7);
+  --snap-selection-bg: rgba(138, 180, 248, 0.15);
+  --snap-selection-border: #8ab4f8;
+}
+
 #snap-translate-overlay {
   position: fixed;
   top: 0;
@@ -23,23 +66,22 @@
 
 #snap-translate-selection {
   position: absolute;
-  border: 2px dashed #0b57d0;
-  background-color: rgba(11, 87, 208, 0.1);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  border: 2px dashed var(--snap-selection-border, #0b57d0);
+  background-color: var(--snap-selection-bg, rgba(11, 87, 208, 0.1));
+  box-shadow: 0 0 0 9999px var(--snap-overlay-bg, rgba(0, 0, 0, 0.5));
   pointer-events: none;
   z-index: 2147483647;
 }
 
-/* Giao diện Popup Kết quả */
 #snap-translate-popup {
   position: fixed;
   top: 20px;
   right: 20px;
   width: 360px;
-  background: white;
+  background: var(--snap-bg-primary, #ffffff);
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  z-index: 2147483647; /* Đảm bảo nổi lên trên hết */
+  box-shadow: 0 8px 30px var(--snap-shadow, rgba(0,0,0,0.15));
+  z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
   display: flex;
@@ -48,8 +90,8 @@
 }
 
 #snap-translate-header {
-  background: #f8f9fa;
-  color: #202124;
+  background: var(--snap-bg-secondary, #f8f9fa);
+  color: var(--snap-text, #202124);
   padding: 14px 16px;
   font-weight: 600;
   font-size: 15px;
@@ -57,7 +99,7 @@
   justify-content: space-between;
   align-items: center;
   cursor: grab;
-  border-bottom: 1px solid #e8eaed;
+  border-bottom: 1px solid var(--snap-border, #e8eaed);
 }
 
 #snap-translate-header:active {
@@ -68,13 +110,13 @@
   cursor: pointer;
   background: none;
   border: none;
-  color: #5f6368;
+  color: var(--snap-text-secondary, #5f6368);
   font-size: 20px;
   line-height: 1;
   padding: 0 4px;
 }
 #snap-translate-close:hover {
-  color: #202124;
+  color: var(--snap-text, #202124);
 }
 
 #snap-translate-content {
@@ -82,7 +124,7 @@
   max-height: 500px;
   overflow-y: auto;
   font-size: 14px;
-  color: #3c4043;
+  color: var(--snap-text, #3c4043);
 }
 
 .snap-translate-section {
@@ -94,7 +136,7 @@
 
 .snap-translate-label {
   font-size: 12px;
-  color: #5f6368;
+  color: var(--snap-text-secondary, #5f6368);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -103,10 +145,10 @@
 
 .snap-translate-text {
   line-height: 1.6;
-  background: #f8f9fa;
+  background: var(--snap-bg-secondary, #f8f9fa);
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--snap-border, #dadce0);
   word-wrap: break-word;
 }
 
@@ -115,15 +157,15 @@
   align-items: center;
   justify-content: center;
   padding: 30px 0;
-  color: #5f6368;
+  color: var(--snap-text-secondary, #5f6368);
   font-weight: 500;
 }
 
 .snap-spinner {
   width: 20px;
   height: 20px;
-  border: 3px solid #e8eaed;
-  border-top: 3px solid #1a73e8;
+  border: 3px solid var(--snap-border, #e8eaed);
+  border-top: 3px solid var(--snap-primary, #1a73e8);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-right: 12px;

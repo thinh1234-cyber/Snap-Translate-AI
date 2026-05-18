@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-14T01:57:44.992176+00:00",
+  "analyzed_files": [
+    "js\\architecture.js",
+    "js\\background.js",
+    "js\\chatgpt_automator.js",
+    "js\\config.js",
+    "js\\content.js",
+    "js\\options.js",
+    "js\\popup.js",
+    "lib\\jsQR.js",
+    "lib\\tesseract-core.wasm.js"
+  ],
+  "not_analyzed_files": [
+    {
+      "path": "css\\content.css",
+      "reason": "other"
+    },
+    {
+      "path": "css\\options.css",
+      "reason": "other"
+    },
+    {
+      "path": "css\\popup.css",
+      "reason": "other"
+    },
+    {
+      "path": "html\\architecture.html",
+      "reason": "other"
+    },
+    {
+      "path": "html\\options.html",
+      "reason": "other"
+    },
+    {
+      "path": "html\\popup.html",
+      "reason": "other"
+    },
+    {
+      "path": "lib\\tesseract.min.js",
+      "reason": "codeboardingignore"
+    },
+    {
+      "path": "lib\\vis-network.min.js",
+      "reason": "codeboardingignore"
+    },
+    {
+      "path": "lib\\worker.min.js",
+      "reason": "codeboardingignore"
+    },
+    {
+      "path": "manifest.json",
+      "reason": "other"
+    },
+    {
+      "path": "README.md",
+      "reason": "other"
+    },
+    {
+      "path": "rules.json",
+      "reason": "other"
+    }
+  ],
+  "summary": {
+    "total_files": 21,
+    "analyzed": 9,
+    "not_analyzed": 12,
+    "not_analyzed_by_reason": {
+      "other": 9,
+      "codeboardingignore": 3
+    }
+  }
+}

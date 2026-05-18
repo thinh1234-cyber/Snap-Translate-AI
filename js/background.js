@@ -6,7 +6,7 @@ import { registerCommandListener, startSnap } from './modules/snap-controller.js
 import { handleTranslation } from './modules/translation-engine.js';
 import { openChatGPTWindow } from './modules/chatgpt-bridge.js';
 import { prepChatGPTCookies, sendPromptToIframe } from './modules/ocr-manager.js';
-import { saveSnap, getHistory, deleteSnap, clearHistory, searchHistory } from './modules/memory-manager.js';
+import { saveSnap, getHistory, deleteSnap, clearHistory, searchHistory, setMaxEntries, getMaxEntriesSetting } from './modules/memory-manager.js';
 
 // ── Register command listener ─────────────────────────────
 registerCommandListener();
@@ -59,6 +59,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "CLEAR_HISTORY":
       clearHistory().then(() => {
         sendResponse({ success: true });
+      });
+      return true;
+
+    case "CHATGPT_RESULT_RECEIVED":
+      saveSnap({
+        mode: "translate",
+        ocrText: request.ocrText || "",
+        translation: request.translation || "",
+        sourceUrl: ""
+      }).then(() => {
+        sendResponse({ success: true });
+      });
+      return true;
+
+    case "SET_MEMORY_LIMIT":
+      setMaxEntries(request.limit).then(newLimit => {
+        sendResponse({ success: true, limit: newLimit });
+      });
+      return true;
+
+    case "GET_MEMORY_LIMIT":
+      getMaxEntriesSetting().then(limit => {
+        sendResponse(limit);
       });
       return true;
 

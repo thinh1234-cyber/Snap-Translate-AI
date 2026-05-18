@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đánh Giá Dự Án - Snap & Translate AI</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --success: #0f9d58;
+      --warning: #f4b400;
+      --danger: #d93025;
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --text: #202124;
+      --text-secondary: #5f6368;
+      --border: #e0e0e0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #1a73e8, #0f9d58); color: white; padding: 40px 20px; text-align: center; border-radius: 0 0 20px 20px; margin-bottom: 30px; }
+    header h1 { font-size: 28px; margin-bottom: 8px; }
+    header p { opacity: 0.9; font-size: 14px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin: 2px; }
+    .badge-success { background: #e6f4ea; color: #0f9d58; }
+    .badge-warning { background: #fef7e0; color: #b06000; }
+    .badge-danger { background: #fce8e6; color: #d93025; }
+    .badge-info { background: #e8f0fe; color: #1a73e8; }
+    .card { background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 20px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .card h3 { font-size: 16px; margin: 16px 0 8px; color: var(--primary); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+    th { background: #f8f9fa; font-weight: 600; color: var(--text-secondary); }
+    tr:hover { background: #f8f9fa; }
+    .score { font-size: 48px; font-weight: 700; text-align: center; padding: 20px; }
+    .score-high { color: var(--success); }
+    .score-mid { color: var(--warning); }
+    .score-low { color: var(--danger); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .metric { text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+    .metric .value { font-size: 32px; font-weight: 700; }
+    .metric .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .recommendation { padding: 14px 16px; border-left: 4px solid var(--primary); background: #e8f0fe; border-radius: 0 8px 8px 0; margin: 10px 0; }
+    .recommendation.warning { border-left-color: var(--warning); background: #fef7e0; }
+    .recommendation.danger { border-left-color: var(--danger); background: #fce8e6; }
+    .recommendation.success { border-left-color: var(--success); background: #e6f4ea; }
+    .recommendation h4 { margin-bottom: 4px; }
+    .recommendation p { font-size: 13px; color: var(--text-secondary); }
+    .code { background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    .toc { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .toc h3 { margin-bottom: 12px; }
+    .toc ul { list-style: none; }
+    .toc li { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .toc li:last-child { border-bottom: none; }
+    .toc a { color: var(--primary); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .priority-high { color: var(--danger); font-weight: 600; }
+    .priority-medium { color: var(--warning); font-weight: 600; }
+    .priority-low { color: var(--success); font-weight: 600; }
+    footer { text-align: center; padding: 30px; color: var(--text-secondary); font-size: 13px; }
+    @media print { header { border-radius: 0; } .card { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Đánh Giá Tổng Quan Dự Án</h1>
+  <p>Snap & Translate AI — Chrome Extension (Manifest V3)</p>
+  <p style="margin-top:8px; font-size:12px;">Phân tích bởi: IT Engineer / UX-UI Designer / Business Administrator | Ngày: 17/05/2026</p>
+</header>
+
+<div class="container">
+
+  <!-- MỤC LỤC -->
+  <div class="toc">
+    <h3>Mục Lục</h3>
+    <ul>
+      <li><a href="#overview">1. Tổng Quan Dự Án</a></li>
+      <li><a href="#architecture">2. Đánh Giá Kiến Trúc</a></li>
+      <li><a href="#code-quality">3. Chất Lượng Mã Nguồn</a></li>
+      <li><a href="#security">4. Bảo Mật</a></li>
+      <li><a href="#ux-ui">5. Trải Nghiệm Người Dùng (UX/UI)</a></li>
+      <li><a href="#performance">6. Hiệu Năng</a></li>
+      <li><a href="#business">7. Góc Độ Kinh Doanh</a></li>
+      <li><a href="#recommendations">8. Phương Án Tối Ưu</a></li>
+      <li><a href="#roadmap">9. Lộ Trình Đề Xuất</a></li>
+    </ul>
+  </div>
+
+  <!-- 1. TỔNG QUAN -->
+  <div class="card" id="overview">
+    <h2>1. Tổng Quan Dự Án</h2>
+    <div class="grid">
+      <div class="metric">
+        <div class="value score-high">7.5/10</div>
+        <div class="label">Điểm Tổng Thể</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">13</div>
+        <div class="label">Tổng Files (không tính .git)</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">~1,600</div>
+        <div class="label">Dòng Code (JS + CSS + HTML)</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">MV3</div>
+        <div class="label">Manifest Version</div>
+      </div>
+    </div>
+
+    <h3>Chức năng chính</h3>
+    <table>
+      <tr><th>Tính năng</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+      <tr><td>Chụp vùng màn hình (Snap)</td><td><span class="badge badge-success">Hoạt động</span></td><td>Overlay + selection box, hỗ trợ DPI</td></tr>
+      <tr><td>OCR offline (Tesseract.js)</td><td><span class="badge badge-success">Hoạt động</span></td><td>Hỗ trợ vie+eng, có progress bar</td></tr>
+      <tr><td>Dịch qua ChatGPT Web (OAuth)</td><td><span class="badge badge-warning">Ổn định tương đối</span></td><td>Automator DOM, phụ thuộc UI ChatGPT</td></tr>
+      <tr><td>Dịch qua API Server (OpenAI-compatible)</td><td><span class="badge badge-success">Hoạt động</span></td><td>Hỗ trợ Vision model</td></tr>
+      <tr><td>Dịch qua Local API (Ollama/LM Studio)</td><td><span class="badge badge-success">Hoạt động</span></td><td>Offline, không cần API Key</td></tr>
+      <tr><td>Đọc mã QR</td><td><span class="badge badge-success">Hoạt động</span></td><td>jsQR library</td></tr>
+      <tr><td>Embed iframe ChatGPT</td><td><span class="badge badge-warning">Rủi ro</span></td><td>Cookie manipulation, có thể bị chặn</td></tr>
+      <tr><td>Keyboard shortcut (Alt+X)</td><td><span class="badge badge-success">Hoạt động</span></td><td>Manifest commands</td></tr>
+    </table>
+  </div>
+
+  <!-- 2. KIẾN TRÚC -->
+  <div class="card" id="architecture">
+    <h2>2. Đánh Giá Kiến Trúc</h2>
+
+    <h3>Ưu điểm</h3>
+    <div class="recommendation success">
+      <h4>Phân tách thành phần rõ ràng</h4>
+      <p>Background (service worker), Content Script, Popup, Options page — tuân thủ đúng mô hình Chrome Extension MV3.</p>
+    </div>
+    <div class="recommendation success">
+      <h4>Config tập trung</h4>
+      <p><span class="code">js/config.js</span> gom selectors, timing, prompt template — dễ bảo trì khi ChatGPT thay đổi DOM.</p>
+    </div>
+    <div class="recommendation success">
+      <h4>Đa kênh AI linh hoạt</h4>
+      <p>Hỗ trợ 3 channel: Web ChatGPT, Server API, Local API — phù hợp nhiều use case.</p>
+    </div>
+
+    <h3>Nhược điểm</h3>
+    <div class="recommendation danger">
+      <h4>Background.js quá lớn (458 dòng)</h4>
+      <p>Vi phạm Single Responsibility Principle. Cần tách thành modules: <span class="code">translation.js</span>, <span class="code">chatgpt-bridge.js</span>, <span class="code">cookie-manager.js</span>, <span class="code">snap-controller.js</span>.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Content.js "thần thánh" (501 dòng)</h4>
+      <p>Xử lý cả overlay, popup UI, OCR, QR, iframe, drag, resize — nên tách thành ít nhất 3 modules riêng.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Không có State Management</h4>
+      <p>Trạng thái snap mode, OCR, translation được truyền qua message rời rạc. Nên có một state machine hoặc event bus tập trung.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Phụ thuộc nặng vào DOM ChatGPT</h4>
+      <p><span class="code">chatgpt_automator.js</span> dùng selectors cứng (#prompt-textarea, [data-testid="send-button"]). ChatGPT update UI = extension gãy.</p>
+    </div>
+  </div>
+
+  <!-- 3. CHẤT LƯỢNG CODE -->
+  <div class="card" id="code-quality">
+    <h2>3. Chất Lượng Mã Nguồn</h2>
+
+    <table>
+      <tr><th>Tiêu chí</th><th>Điểm</th><th>Nhận xét</th></tr>
+      <tr><td>Cấu trúc file</td><td><span class="badge badge-success">7/10</span></td><td>Tổ chức hợp lý nhưng thiếu modules hóa</td></tr>
+      <tr><td>Error handling</td><td><span class="badge badge-warning">5/10</span></td><td>Catch có nhưng chưa đồng nhất, thiếu logging chuẩn</td></tr>
+      <tr><td>Code duplication</td><td><span class="badge badge-warning">5/10</span></td><td>Logic inject script lặp ở popup.js và background.js</td></tr>
+      <tr><td>Type safety</td><td><span class="badge badge-danger">3/10</span></td><td>Thuần JS, không có JSDoc/TypeScript, dễ lỗi runtime</td></tr>
+      <tr><td>Testing</td><td><span class="badge badge-danger">0/10</span></td><td>Không có test nào (unit, integration, e2e)</td></tr>
+      <tr><td>Documentation</td><td><span class="badge badge-warning">5/10</span></td><td>README có nhưng thiếu API docs, architecture diagrams</td></tr>
+      <tr><td>Code comments</td><td><span class="badge badge-success">7/10</span></td><td>Comments tiếng Việt rõ ràng, giải thích intent tốt</td></tr>
+      <tr><td>Naming conventions</td><td><span class="badge badge-warning">6/10</span></td><td>Trộn lẫn camelCase và snake_case, một số tên quá dài</td></tr>
+    </table>
+
+    <h3>Vấn đề cụ thể</h3>
+    <div class="recommendation danger">
+      <h4>Memory leak tiềm ẩn — content.js:497-499</h4>
+      <p><span class="code">document.onmouseup</span> và <span class="code">document.onmousemove</span> gán trực tiếp, không cleanup khi popup bị xóa. Nên dùng <span class="code">addEventListener/removeEventListener</span>.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Callback hell — background.js:265-360</h4>
+      <p><span class="code">translateViaWebAuth</span> có nested try-catch quá sâu, khó debug. Nên refactor thành async/await flat structure.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Hardcoded magic numbers</h4>
+      <p>Nhiều con số rải rác: <span class="code">setTimeout(r, 3000)</span>, <span class="code">setTimeout(r, 2000)</span>, <span class="code">attempts < 3</span> — nên đưa vào config.js.</p>
+    </div>
+    <div class="recommendation success">
+      <h4>XSS protection tốt — content.js:464-471</h4>
+      <p>Hàm <span class="code">escapeHtml()</span> được sử dụng đúng chỗ, ngăn chặn injection qua OCR text và translation result.</p>
+    </div>
+  </div>
+
+  <!-- 4. BẢO MẬT -->
+  <div class="card" id="security">
+    <h2>4. Bảo Mật</h2>
+
+    <table>
+      <tr><th>Vấn đề</th><th>Mức độ</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Cookie manipulation</td>
+        <td><span class="badge badge-danger">NGHIÊM TRỌNG</span></td>
+        <td>background.js:81-118 — Set lại cookies chatgpt.com với <span class="code">sameSite: "no_restriction"</span>. Vi phạm chính sách bảo mật trình duyệt, có thể bị Chrome chặn hoặc extension bị reject khỏi Web Store.</td>
+      </tr>
+      <tr>
+        <td>API Key lưu ở chrome.storage.sync</td>
+        <td><span class="badge badge-warning">TRUNG BÌNH</span></td>
+        <td>API Key được lưu đồng bộ lên Google account. Nếu tài khoản bị xâm nhập, key bị lộ. Nên dùng <span class="code">chrome.storage.local</span> thay thế.</td>
+      </tr>
+      <tr>
+        <td>Host permissions quá rộng</td>
+        <td><span class="badge badge-warning">TRUNG BÌNH</span></td>
+        <td><span class="code">"&lt;all_urls&gt;"</span> trong host_permissions — không cần thiết cho chức năng chính. Nên thu hẹp xuống các domain cụ thể.</td>
+      </tr>
+      <tr>
+        <td>Anti-throttling script</td>
+        <td><span class="badge badge-warning">TRUNG BÌNH</span></td>
+        <td>chatgpt_automator.js:13-27 — Override <span class="code">document.visibilityState</span> và <span class="code">requestAnimationFrame</span>. Có thể bị phát hiện là hành vi bất thường.</td>
+      </tr>
+      <tr>
+        <td>execCommand('insertText')</td>
+        <td><span class="badge badge-info">THẤP</span></td>
+        <td>Đã deprecated nhưng vẫn hoạt động. Fallback <span class="code">innerText + dispatchEvent</span> có thể bị ProseMirror bỏ qua.</td>
+      </tr>
+      <tr>
+        <td>declarativeNetRequest</td>
+        <td><span class="badge badge-info">THẤP</span></td>
+        <td>Dùng để bypass CSP cho chatgpt.com — hợp lý về mặt kỹ thuật nhưng có thể vi phạm ToS của ChatGPT.</td>
+      </tr>
+    </table>
+
+    <div class="recommendation danger">
+      <h4>Khuyến nghị bảo mật quan trọng nhất</h4>
+      <p>Remove cookie manipulation và iframe embedding. Thay vào đó, sử dụng <strong>Chrome Tab Capture API</strong> kết hợp với <strong>Chrome Messaging</strong> để giao tiếp với tab ChatGPT đã mở — an toàn và tuân thủ chính sách.</p>
+    </div>
+  </div>
+
+  <!-- 5. UX/UI -->
+  <div class="card" id="ux-ui">
+    <h2>5. Trải Nghiệm Người Dùng (UX/UI)</h2>
+
+    <h3>Điểm mạnh</h3>
+    <div class="recommendation success">
+      <h4>Selection overlay trực quan</h4>
+      <p>Dark dimmer + dashed border + crosshair cursor — giống công cụ screenshot chuyên nghiệp. Box-shadow 9999px là kỹ thuật thông minh.</p>
+    </div>
+    <div class="recommendation success">
+      <h4>Popup kết quả có drag + resize</h4>
+      <p>Người dùng có thể di chuyển và thay đổi kích thước popup — UX tốt cho workflow đa nhiệm.</p>
+    </div>
+    <div class="recommendation success">
+      <h4>Progress indicator rõ ràng</h4>
+      <p>OCR hiển thị % tiến trình, spinner animation, nút hủy tiến trình — giảm anxiety cho người dùng.</p>
+    </div>
+
+    <h3>Điểm cần cải thiện</h3>
+    <div class="recommendation warning">
+      <h4>Popup HTML thiếu visual hierarchy</h4>
+      <p>Popup chỉ có 3 nút đơn giản, thiếu visual feedback khi hover/focus. Nên thêm: animation khi click, loading state trên nút, tooltip hướng dẫn.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Options page thiếu responsive</h4>
+      <p>Max-width 600px cố định — không tối ưu cho màn hình nhỏ hoặc tablet. Nên dùng responsive grid.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Không có onboarding flow</h4>
+      <p>Người dùng mới cài sẽ bối rối: cần đăng nhập ChatGPT trước? Bật OCR ở đâu? Alt+X là gì? Nên có welcome tour sau khi cài.</p>
+    </div>
+    <div class="recommendation danger">
+      <h4>Không có error recovery UX</h4>
+      <p>Khi OCR thất bại hoặc ChatGPT không phản hồi, thông báo lỗi kỹ thuật khó hiểu với người dùng phổ thông. Nên có: hướng dẫn khắc phục, nút retry, link support.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Thiếu dark mode</h4>
+      <p>Giao diện sáng hoàn toàn — không phù hợp người dùng làm việc ban đêm hoặc prefer dark theme.</p>
+    </div>
+    <div class="recommendation warning">
+      <h4>Không có clipboard copy button</h4>
+      <p>Kết quả dịch không có nút copy — người dùng phải bôi đen thủ công. Đây là tính năng cơ bản cần có.</p>
+    </div>
+  </div>
+
+  <!-- 6. HIỆU NĂNG -->
+  <div class="card" id="performance">
+    <h2>6. Hiệu Năng</h2>
+
+    <table>
+      <tr><th>Thành phần</th><th>Đánh giá</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tesseract.js load</td>
+        <td><span class="badge badge-warning">Nặng</span></td>
+        <td>~4MB traineddata (vie+eng). Load lần đầu chậm, nhưng có caching. Nên lazy-load chỉ khi user bật OCR.</td>
+      </tr>
+      <tr>
+        <td>Content script injection</td>
+        <td><span class="badge badge-warning">Có thể tối ưu</span></td>
+        <td>Inject <span class="code">tesseract.min.js + jsQR.js</span> vào MỌI trang (<span class="code">&lt;all_urls&gt;</span>). Tốn tài nguyên ngay cả khi user không snap.</td>
+      </tr>
+      <tr>
+        <td>Anti-throttle polling</td>
+        <td><span class="badge badge-warning">Tốn CPU</span></td>
+        <td>chatgpt_automator.js poll mỗi 500ms + focus events liên tục. Có thể gây drain pin trên laptop.</td>
+      </tr>
+      <tr>
+        <td>Canvas cropping</td>
+        <td><span class="badge badge-success">Tốt</span></td>
+        <td>Sử dụng DPR-aware cropping, chất lượng ảnh cao trên màn hình Retina/HiDPI.</td>
+      </tr>
+      <tr>
+        <td>Tab management</td>
+        <td><span class="badge badge-warning">Có vấn đề</span></td>
+        <td>Tạo pinned tab ChatGPT với <span class="code">autoDiscardable: false</span> — ngăn browser giải phóng RAM, có thể gây chậm máy nếu user mở nhiều tab.</td>
+      </tr>
+    </table>
+
+    <div class="recommendation warning">
+      <h4>Khuyến nghị hiệu năng</h4>
+      <p>Chuyển content scripts từ <span class="code">run_at: "document_idle"</span> sang <strong>dynamic injection</strong> — chỉ inject khi user thực sự nhấn nút Snap. Giảm ~70% resource consumption trên các trang không sử dụng.</p>
+    </div>
+  </div>
+
+  <!-- 7. GÓC ĐỘ KINH DOANH -->
+  <div class="card" id="business">
+    <h2>7. Góc Độ Kinh Doanh</h2>
+
+    <h3>Phân tích SWOT</h3>
+    <table>
+      <tr><th></th><th>Nội bộ</th><th>Bên ngoài</th></tr>
+      <tr>
+        <td><strong>Tích cực</strong></td>
+        <td><strong>Strengths:</strong><br>• Đa kênh AI (miễn phí + trả phí + offline)<br>• OCR offline không cần internet<br>• QR reader tích hợp<br>• UI tiếng Việt thân thiện<br>• Không phụ thuộc API key (Web mode)</td>
+        <td><strong>Opportunities:</strong><br>• Thị trường extension dịch thuật lớn<br>• Nhu cầu dịch tài liệu chuyên ngành cao<br>• Có thể mở rộng sang Firefox, Edge<br>• Freemium model (Web free, API premium)</td>
+      </tr>
+      <tr>
+        <td><strong>Tiêu cực</strong></td>
+        <td><strong>Weaknesses:</strong><br>• Không có test → khó maintain<br>• Phụ thuộc DOM ChatGPT → dễ gãy<br>• Không có analytics → không hiểu user<br>• Thiếu documentation cho contributor<br>• Codebase nhỏ nhưng đã "spaghetti"</td>
+        <td><strong>Threats:</strong><br>• Chrome Web Store policy thay đổi<br>• ChatGPT thay đổi UI/ToS<br>• Cạnh tranh từ Google Lens, DeepL<br>• Cookie manipulation có thể bị block<br>• AI local models ngày càng tốt → giảm nhu cầu</td>
+      </tr>
+    </table>
+
+    <h3>Mô hình monetization đề xuất</h3>
+    <table>
+      <tr><th>Gói</th><th>Giá</th><th>Tính năng</th></tr>
+      <tr><td><strong>Free</strong></td><td>$0</td><td>OCR offline, QR reader, 10 snaps/ngày qua Web ChatGPT</td></tr>
+      <tr><td><strong>Pro</strong></td><td>$3/tháng</td><td>Unlimited snaps, API integration, priority support, dark mode</td></tr>
+      <tr><td><strong>Team</strong></td><td>$8/người/tháng</td><td>Shared glossary, custom prompts, admin dashboard, SSO</td></tr>
+    </table>
+
+    <h3>KPI đề xuất theo dõi</h3>
+    <div class="grid">
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">DAU/MAU</div>
+        <div class="label">Daily/Monthly Active Users</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">Snaps/User/Day</div>
+        <div class="label">Engagement metric</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">OCR Success Rate</div>
+        <div class="label">Chất lượng OCR</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:var(--primary)">Churn Rate</div>
+        <div class="label">Tỷ lệ uninstall</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. PHƯƠNG ÁN TỐI ƯU -->
+  <div class="card" id="recommendations">
+    <h2>8. Phương Án Tối Ưu</h2>
+
+    <h3>🔴 Ưu tiên cao — Cần làm ngay</h3>
+
+    <div class="recommendation danger">
+      <h4>R1: Loại bỏ cookie manipulation & iframe embedding</h4>
+      <p><strong>Vấn đề:</strong> Vi phạm Chrome Web Store policy, rủi ro bảo mật, không ổn định.<br>
+      <strong>Giải pháp:</strong> Sử dụng <span class="code">chrome.tabs.sendMessage</span> trực tiếp tới tab ChatGPT đã mở (đã có content script). Không cần iframe, không cần cookie hack.<br>
+      <strong>Estimate:</strong> 2-3 ngày</p>
+    </div>
+
+    <div class="recommendation danger">
+      <h4>R2: Tách background.js thành modules</h4>
+      <p><strong>Vấn đề:</strong> 458 dòng single file, khó maintain, khó test.<br>
+      <strong>Giải pháp:</strong> Tách thành 4 modules:<br>
+      &nbsp;&nbsp;• <span class="code">js/modules/snap-controller.js</span> — xử lý snap commands<br>
+      &nbsp;&nbsp;• <span class="code">js/modules/translation-engine.js</span> — API calls, prompt building<br>
+      &nbsp;&nbsp;• <span class="code">js/modules/chatgpt-bridge.js</span> — tab management, messaging<br>
+      &nbsp;&nbsp;• <span class="code">js/modules/notification-manager.js</span> — error handling, user feedback<br>
+      <strong>Estimate:</strong> 3-4 ngày</p>
+    </div>
+
+    <div class="recommendation danger">
+      <h4>R3: Thêm automated testing</h4>
+      <p><strong>Vấn đề:</strong> 0% code coverage, mỗi lần sửa là đánh liều.<br>
+      <strong>Giải pháp:</strong><br>
+      &nbsp;&nbsp;• Unit tests: Jest cho config.js, prompt building, escapeHtml<br>
+      &nbsp;&nbsp;• Integration: chrome-remote-interface cho message passing<br>
+      &nbsp;&nbsp;• E2E: Playwright với Chrome extension support<br>
+      <strong>Estimate:</strong> 5-7 ngày (setup + viết test cốt lõi)</p>
+    </div>
+
+    <h3>🟡 Ưu tiên trung bình — Nên làm trong sprint tới</h3>
+
+    <div class="recommendation warning">
+      <h4>R4: Lazy-load content scripts</h4>
+      <p><strong>Vấn đề:</strong> Tesseract + jsQR load trên mọi trang, tốn RAM.<br>
+      <strong>Giải pháp:</strong> Bỏ content_scripts khỏi manifest, chỉ inject động khi user nhấn Snap. Giảm ~70% memory footprint.<br>
+      <strong>Estimate:</strong> 1-2 ngày</p>
+    </div>
+
+    <div class="recommendation warning">
+      <h4>R5: Thêm onboarding flow</h4>
+      <p><strong>Vấn đề:</strong> User mới không biết cách sử dụng.<br>
+      <strong>Giải pháp:</strong> Tạo <span class="code">html/onboarding.html</span> hiển thị lần đầu cài đặt: hướng dẫn 3 bước (đăng nhập ChatGPT → nhấn Alt+X → xem kết quả). Lưu flag <span class="code">hasSeenOnboarding</span> trong storage.<br>
+      <strong>Estimate:</strong> 1-2 ngày</p>
+    </div>
+
+    <div class="recommendation warning">
+      <h4>R6: Thêm copy button + export kết quả</h4>
+      <p><strong>Vấn đề:</strong> Không có cách nhanh để copy kết quả dịch.<br>
+      <strong>Giải pháp:</strong> Thêm nút 📋 Copy bên cạnh mỗi kết quả. Hỗ trợ export TXT/CSV cho batch translation.<br>
+      <strong>Estimate:</strong> 0.5 ngày</p>
+    </div>
+
+    <div class="recommendation warning">
+      <h4>R7: Dark mode support</h4>
+      <p><strong>Vấn đề:</strong> Chỉ có light mode.<br>
+      <strong>Giải pháp:</strong> CSS variables + <span class="code">prefers-color-scheme</span> media query. Toggle trong options page.<br>
+      <strong>Estimate:</strong> 1-2 ngày</p>
+    </div>
+
+    <h3>🟢 Ưu tiên thấp — Có thể làm sau</h3>
+
+    <div class="recommendation success">
+      <h4>R8: Chuyển sang TypeScript</h4>
+      <p><strong>Lợi ích:</strong> Type safety, autocomplete, giảm runtime errors. Bắt đầu với JSDoc comments trước khi migrate hoàn toàn.<br>
+      <strong>Estimate:</strong> 7-10 ngày</p>
+    </div>
+
+    <div class="recommendation success">
+      <h4>R9: Analytics & crash reporting</h4>
+      <p><strong>Lợi ích:</strong> Hiểu user behavior, phát hiện lỗi production. Dùng Plausible (privacy-friendly) hoặc tự-host.<br>
+      <strong>Estimate:</strong> 2-3 ngày</p>
+    </div>
+
+    <div class="recommendation success">
+      <h4>R10: Publish lên Chrome Web Store</h4>
+      <p><strong>Yêu cầu trước:</strong> Remove cookie manipulation, thu hẹp permissions, thêm privacy policy, viết mô tả chuyên nghiệp.<br>
+      <strong>Estimate:</strong> 3-5 ngày (chuẩn bị + review)</p>
+    </div>
+  </div>
+
+  <!-- 9. LỘ TRÌNH -->
+  <div class="card" id="roadmap">
+    <h2>9. Lộ Trình Đề Xuất</h2>
+
+    <table>
+      <tr><th>Giai đoạn</th><th>Thời gian</th><th>Nội dung</th><th>Outcome</th></tr>
+      <tr>
+        <td><strong>Phase 1: Stabilize</strong></td>
+        <td>Tuần 1-2</td>
+        <td>R1, R2, R3 — Fix bảo mật, refactor modules, thêm tests</td>
+        <td>Codebase sạch, an toàn, testable</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2: UX Polish</strong></td>
+        <td>Tuần 3-4</td>
+        <td>R4, R5, R6, R7 — Lazy load, onboarding, copy button, dark mode</td>
+        <td>UX mượt mà, user retention tăng</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3: Scale</strong></td>
+        <td>Tuần 5-6</td>
+        <td>R8, R9 — TypeScript migration, analytics</td>
+        <td>Codebase enterprise-ready, data-driven decisions</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4: Launch</strong></td>
+        <td>Tuần 7-8</td>
+        <td>R10 — Chrome Web Store submission, marketing</td>
+        <td>Public launch, user acquisition</td>
+      </tr>
+    </table>
+
+    <h3>Rủi ro & Mitigation</h3>
+    <table>
+      <tr><th>Rủi ro</th><th>Xác suất</th><th>Impact</th><th>Mitigation</th></tr>
+      <tr><td>ChatGPT thay đổi DOM</td><td>Cao</td><td>Cao</td><td>Abstract selectors qua config.js, thêm fallback selectors, alert user khi detect change</td></tr>
+      <tr><td>Chrome Web Store reject</td><td>Trung bình</td><td>Cao</td><td>Remove cookie manipulation trước khi submit, follow policy guidelines</td></tr>
+      <tr><td>Tesseract traineddata quá nặng</td><td>Thấp</td><td>Trung bình</td><td>Lazy load, CDN hosting, hoặc chuyển sang server-side OCR</td></tr>
+      <tr><td>API rate limiting</td><td>Trung bình</td><td>Trung bình</td><td>Implement retry with exponential backoff, queue system</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  <p>Báo cáo được tạo tự động dựa trên phân tích mã nguồn | Snap & Translate AI v1.0.0</p>
+  <p style="margin-top:4px;">© 2026 — Đánh giá bởi IT Engineer / UX-UI Designer / Business Administrator</p>
+</footer>
+
+</body>
+</html>

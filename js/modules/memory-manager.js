@@ -3,10 +3,17 @@
 // ═══════════════════════════════════════════════════════════
 
 const MEMORY_KEY = "snap_history";
-const MAX_ENTRIES = 100;
+const DEFAULT_MAX_ENTRIES = 50;
+
+async function getMaxEntries() {
+  const result = await chrome.storage.sync.get({ memoryLimit: DEFAULT_MAX_ENTRIES });
+  return result.memoryLimit || DEFAULT_MAX_ENTRIES;
+}
 
 export async function saveSnap(entry) {
   const history = await getHistory();
+  const maxEntries = await getMaxEntries();
+
   history.unshift({
     id: Date.now().toString(),
     timestamp: new Date().toISOString(),
@@ -17,8 +24,8 @@ export async function saveSnap(entry) {
     confidence: entry.confidence || 0
   });
 
-  if (history.length > MAX_ENTRIES) {
-    history.length = MAX_ENTRIES;
+  if (history.length > maxEntries) {
+    history.length = maxEntries;
   }
 
   await chrome.storage.local.set({ [MEMORY_KEY]: history });
@@ -51,4 +58,20 @@ export async function searchHistory(query) {
     (entry.ocrText && entry.ocrText.toLowerCase().includes(lowerQuery)) ||
     (entry.translation && entry.translation.toLowerCase().includes(lowerQuery))
   );
+}
+
+export async function setMaxEntries(limit) {
+  const clamped = Math.max(10, Math.min(500, limit));
+  await chrome.storage.sync.set({ memoryLimit: clamped });
+
+  const history = await getHistory();
+  if (history.length > clamped) {
+    history.length = clamped;
+    await chrome.storage.local.set({ [MEMORY_KEY]: history });
+  }
+  return clamped;
+}
+
+export async function getMaxEntriesSetting() {
+  return await getMaxEntries();
 }

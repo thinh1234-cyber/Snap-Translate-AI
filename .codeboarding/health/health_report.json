@@ -1,0 +1,525 @@
+{
+  "repository_name": "snapshot-worktree",
+  "timestamp": "2026-05-14T01:55:22.530557+00:00",
+  "overall_score": 0.980647562337179,
+  "check_summaries": [
+    {
+      "check_name": "function_size",
+      "description": "Checks that functions/methods do not exceed line count thresholds",
+      "check_type": "standard",
+      "total_entities_checked": 288,
+      "findings_count": 6,
+      "warning_count": 6,
+      "score": 0.9791666666666666,
+      "finding_groups": [
+        {
+          "severity": "warning",
+          "threshold": 150,
+          "description": "Functions exceeding 150.0 lines",
+          "entities": [
+            {
+              "entity_name": "lib.jsQR.<function>",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 10,
+              "line_end": 10102,
+              "metric_value": 10092
+            },
+            {
+              "entity_name": "lib.jsQR.<function>.<function>",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 9694,
+              "line_end": 10100,
+              "metric_value": 406
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 2,
+              "line_end": 274,
+              "metric_value": 272
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 6,
+              "line_end": 271,
+              "metric_value": 265
+            },
+            {
+              "entity_name": "lib.jsQR.<function>.<function>.locate",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 9897,
+              "line_end": 10053,
+              "metric_value": 156
+            },
+            {
+              "entity_name": "js.architecture.document.addEventListener('DOMContentLoaded') callback",
+              "file_path": "js\\architecture.js",
+              "line_start": 1,
+              "line_end": 155,
+              "metric_value": 154
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "check_name": "fan_out",
+      "description": "Checks efferent coupling: how many other functions each function calls",
+      "check_type": "standard",
+      "total_entities_checked": 1157,
+      "findings_count": 6,
+      "warning_count": 6,
+      "score": 0.9948141745894555,
+      "finding_groups": [
+        {
+          "severity": "warning",
+          "threshold": 10,
+          "description": "Functions calling more than 10.0 other functions",
+          "entities": [
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.B.Lf",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 31,
+              "line_end": 32,
+              "metric_value": 16
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.N.get_spp.N",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 236,
+              "line_end": 236,
+              "metric_value": 14
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 6,
+              "line_end": 271,
+              "metric_value": 13
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.N.get_yres.N",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 237,
+              "line_end": 237,
+              "metric_value": 13
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.N.get_text.N",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 238,
+              "line_end": 238,
+              "metric_value": 13
+            },
+            {
+              "entity_name": "lib.jsQR.<function>.<function>.__webpack_require__.d",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 47,
+              "line_end": 55,
+              "metric_value": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "check_name": "fan_in",
+      "description": "Checks afferent coupling: how many other functions call each function",
+      "check_type": "standard",
+      "total_entities_checked": 1157,
+      "findings_count": 4,
+      "warning_count": 4,
+      "score": 0.996542783059637,
+      "finding_groups": [
+        {
+          "severity": "warning",
+          "threshold": 10,
+          "description": "Functions called by more than 10.0 other functions",
+          "entities": [
+            {
+              "entity_name": "lib.tesseract-core.wasm.<function>.<function>.X.constructor",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 240,
+              "line_end": 240,
+              "metric_value": 19
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.X.SetVariable.X",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 242,
+              "line_end": 242,
+              "metric_value": 19
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.<function>.<function>.G.constructor",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 195,
+              "line_end": 195,
+              "metric_value": 18
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.<function>.<function>.L.constructor",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 201,
+              "line_end": 201,
+              "metric_value": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "check_name": "god_class",
+      "description": "Detects classes with too many methods, too much code, or too many outgoing dependencies",
+      "check_type": "standard",
+      "total_entities_checked": 33,
+      "findings_count": 4,
+      "warning_count": 4,
+      "score": 0.8787878787878788,
+      "finding_groups": [
+        {
+          "severity": "warning",
+          "threshold": 25,
+          "description": "Classes exceeding god class criteria (methods, LOC, or fan-out)",
+          "entities": [
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.A",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "metric_value": 90.0
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.X",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "metric_value": 64.0
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.L",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "metric_value": 42.0
+            },
+            {
+              "entity_name": "lib.tesseract-core.wasm.TesseractCore.<function>.<function>.ec",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "metric_value": 33.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "check_name": "circular_dependencies",
+      "description": "Detects circular dependencies between packages",
+      "check_type": "circular_dependencies",
+      "cycles": [],
+      "packages_checked": 2,
+      "packages_in_cycles": 0
+    },
+    {
+      "check_name": "package_instability",
+      "description": "Computes Martin's instability metric (I = Ce / (Ca + Ce)) per package",
+      "check_type": "standard",
+      "total_entities_checked": 0,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "component_cohesion",
+      "description": "Measures internal vs external edge ratio per component/cluster",
+      "check_type": "standard",
+      "total_entities_checked": 20,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "unused_code_diagnostics",
+      "description": "Detects unused imports, variables, functions, and dead code via LSP diagnostics",
+      "check_type": "standard",
+      "total_entities_checked": 32,
+      "findings_count": 32,
+      "warning_count": 0,
+      "score": 0.0,
+      "finding_groups": [
+        {
+          "severity": "info",
+          "threshold": 0,
+          "description": "Variables declared but never used",
+          "entities": [
+            {
+              "entity_name": "[unused_variable] 'dataUrl' is declared but its value is never read.",
+              "file_path": "js\\background.js",
+              "line_start": 121,
+              "line_end": 121,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'res' is declared but its value is never read.",
+              "file_path": "js\\background.js",
+              "line_start": 153,
+              "line_end": 153,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'isNewTab' is declared but its value is never read.",
+              "file_path": "js\\background.js",
+              "line_start": 268,
+              "line_end": 268,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'dataUrl' is declared but its value is never read.",
+              "file_path": "js\\background.js",
+              "line_start": 363,
+              "line_end": 363,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'res' is declared but its value is never read.",
+              "file_path": "js\\background.js",
+              "line_start": 449,
+              "line_end": 449,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'sender' is declared but its value is never read.",
+              "file_path": "js\\chatgpt_automator.js",
+              "line_start": 29,
+              "line_end": 29,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'sender' is declared but its value is never read.",
+              "file_path": "js\\content.js",
+              "line_start": 9,
+              "line_end": 9,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'e' is declared but its value is never read.",
+              "file_path": "js\\content.js",
+              "line_start": 70,
+              "line_end": 70,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'specialtyCard' is declared but its value is never read.",
+              "file_path": "js\\options.js",
+              "line_start": 2,
+              "line_end": 2,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'aiChannelCard' is declared but its value is never read.",
+              "file_path": "js\\options.js",
+              "line_start": 3,
+              "line_end": 3,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'autopromptCard' is declared but its value is never read.",
+              "file_path": "js\\options.js",
+              "line_start": 4,
+              "line_end": 4,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 78,
+              "line_end": 78,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 115,
+              "line_end": 115,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 185,
+              "line_end": 185,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 322,
+              "line_end": 322,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 385,
+              "line_end": 385,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 505,
+              "line_end": 505,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 821,
+              "line_end": 821,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 1043,
+              "line_end": 1043,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 1101,
+              "line_end": 1101,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 8149,
+              "line_end": 8149,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 8278,
+              "line_end": 8278,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 9593,
+              "line_end": 9593,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'module' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 9694,
+              "line_end": 9694,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'p' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 10005,
+              "line_end": 10005,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'size' is declared but its value is never read.",
+              "file_path": "lib\\jsQR.js",
+              "line_start": 10086,
+              "line_end": 10086,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'a' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 8,
+              "line_end": 8,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'g' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 35,
+              "line_end": 35,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'e' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 38,
+              "line_end": 38,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'c' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 52,
+              "line_end": 52,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'e' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 60,
+              "line_end": 60,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'd' is declared but its value is never read.",
+              "file_path": "lib\\tesseract-core.wasm.js",
+              "line_start": 64,
+              "line_end": 64,
+              "metric_value": 0.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "file_summaries": [
+    {
+      "file_path": "lib\\tesseract-core.wasm.js",
+      "total_findings": 21,
+      "warning_findings": 15,
+      "composite_risk_score": 100.0
+    },
+    {
+      "file_path": "lib\\jsQR.js",
+      "total_findings": 19,
+      "warning_findings": 4,
+      "composite_risk_score": 70.0
+    },
+    {
+      "file_path": "js\\background.js",
+      "total_findings": 5,
+      "warning_findings": 0,
+      "composite_risk_score": 50.0
+    },
+    {
+      "file_path": "js\\options.js",
+      "total_findings": 3,
+      "warning_findings": 0,
+      "composite_risk_score": 30.0
+    },
+    {
+      "file_path": "js\\content.js",
+      "total_findings": 2,
+      "warning_findings": 0,
+      "composite_risk_score": 20.0
+    },
+    {
+      "file_path": "js\\architecture.js",
+      "total_findings": 1,
+      "warning_findings": 1,
+      "composite_risk_score": 15.0
+    },
+    {
+      "file_path": "js\\chatgpt_automator.js",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    }
+  ]
+}
