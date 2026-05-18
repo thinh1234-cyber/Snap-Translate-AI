@@ -190,24 +190,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
             }
           }
         });
-
-        if (data.aiChannel === "web") {
-          showOcrResultWithTranslateBtn(extractedText, croppedDataUrl);
-        } else {
-          updatePopupLoadingText(extractedText ? "Đang gửi cho AI phân tích..." : "Đang chờ AI phân tích (Vision)...");
-          chrome.runtime.sendMessage({
-            action: "TRANSLATE_IMAGE",
-            dataUrl: croppedDataUrl,
-            ocrText: extractedText
-          }, (res) => {
-            if (res && res.success) {
-              updatePopupResult(extractedText ? `(OCR Text)\n${extractedText}` : "", res.translation);
-            } else {
-              updatePopupError(res ? res.error : "Mất kết nối với Trung tâm điều khiển. Thử tải lại thẻ.");
-            }
-          });
-        }
-      });
     };
     img.src = dataUrl;
   }
