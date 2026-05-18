@@ -36,7 +36,7 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 ### AI Channels
 | Kênh | Đặc điểm |
 |------|----------|
-| 💬 **Web ChatGPT** | Miễn phí, dùng session ChatGPT có sẵn |
+| 💬 **Web ChatGPT** | Miễn phí, dùng session ChatGPT có sẵn |git
 | 🔗 **Server API** | OpenAI-compatible, siêu tốc |
 | 🖥️ **Local API** | Ollama/LM Studio, offline, riêng tư |
 
@@ -119,7 +119,8 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 │   └── lang-data/             
 ├── html/                      
 ├── css/                       
-└── manifest.json              
+└── manifest.json        
+```      
 ---
 
 ## 🔧 Công nghệ
