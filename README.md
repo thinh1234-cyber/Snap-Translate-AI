@@ -18,6 +18,7 @@
 ---
 
 ## 🎯 Tổng quan
+<img src="assets/V1.png" alt="Logo" width="800">
 
 Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích xuất văn bản bằng OCR offline (Tesseract.js), sau đó dịch thuật qua 3 kênh: **Web ChatGPT**, **OpenAI API**, hoặc **Local LLM** (Ollama/LM Studio). Hỗ trợ đọc mã QR, lưu lịch sử, quản lý thuật ngữ chuyên ngành.
 
