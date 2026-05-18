@@ -180,6 +180,17 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               updatePopupError("OCR không nhận diện được chữ nào trong vùng ảnh!");
               return;
             }
+
+            chrome.runtime.sendMessage({
+              action: "SAVE_SNAP",
+              entry: { mode: "translate", ocrText: extractedText, translation: "", sourceUrl: window.location.href }
+            });
+            chrome.runtime.sendMessage({
+              action: "SAVE_SNAP_FILES",
+              dataUrl: croppedDataUrl,
+              textContent: extractedText,
+              mode: "translate"
+            });
           } catch (err) {
             console.error(err);
             updatePopupError("Lỗi OCR: " + err.message);
@@ -198,16 +209,6 @@ if (typeof window.snapTranslateInjected === 'undefined') {
           }, (res) => {
             if (res && res.success) {
               updatePopupResult(extractedText ? `(OCR Text)\n${extractedText}` : "", res.translation);
-              chrome.runtime.sendMessage({
-                action: "SAVE_SNAP",
-                entry: { mode: "translate", ocrText: extractedText || "", translation: res.translation, sourceUrl: window.location.href }
-              });
-              chrome.runtime.sendMessage({
-                action: "SAVE_SNAP_FILES",
-                dataUrl: croppedDataUrl,
-                textContent: extractedText ? `[OCR]\n${extractedText}\n\n[TRANSLATION]\n${res.translation}` : res.translation,
-                mode: "translate"
-              });
             } else {
               updatePopupError(res ? res.error : "Mất kết nối với Trung tâm điều khiển. Thử tải lại thẻ.");
             }
