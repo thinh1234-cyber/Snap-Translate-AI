@@ -5,9 +5,11 @@ if (typeof window.snapTranslateInjected === 'undefined') {
   let startX, startY;
   let isSnapping = false;
   let overlay, selectionBox;
+  let currentSnapMode = "translate";
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "START_SNAP") {
+      currentSnapMode = request.mode || "translate";
       initSnapOverlay();
     }
     if (request.action === "THEME_CHANGED") {
@@ -115,7 +117,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
   function cropImage(dataUrl, rect) {
     const img = new Image();
     img.onload = async () => {
-      chrome.storage.sync.get({ mode: "normal", useOcr: true, aiChannel: "web" }, async (data) => {
+      chrome.storage.sync.get({ useOcr: true, aiChannel: "web" }, async (data) => {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth = rect.width * dpr;
         const canvasHeight = rect.height * dpr;
@@ -128,7 +130,7 @@ if (typeof window.snapTranslateInjected === 'undefined') {
 
         const croppedDataUrl = canvas.toDataURL("image/png");
 
-        if (data.mode === "qr") {
+        if (currentSnapMode === "qr") {
           try {
             const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
             const code = jsQR(imageData.data, imageData.width, imageData.height);

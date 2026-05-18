@@ -2,23 +2,23 @@
 // SNAP-CONTROLLER.JS — Quản lý chụp vùng màn hình (Lazy-load)
 // ═══════════════════════════════════════════════════════════
 
-export async function startSnap(tab) {
+export async function startSnap(tab, mode = "translate") {
   if (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) {
     console.error("Cannot snap on browser UI pages");
     return;
   }
 
-  await injectAndStartSnap(tab);
+  await injectAndStartSnap(tab, mode);
 }
 
-async function injectAndStartSnap(tab) {
+async function injectAndStartSnap(tab, mode) {
   try {
     await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["css/content.css"] });
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"]
     });
-    chrome.tabs.sendMessage(tab.id, { action: "START_SNAP" });
+    chrome.tabs.sendMessage(tab.id, { action: "START_SNAP", mode: mode });
   } catch (e) {
     console.log("Cannot start snap even with dynamic injection fallback: ", e);
     if (tab.url.startsWith("file://")) {

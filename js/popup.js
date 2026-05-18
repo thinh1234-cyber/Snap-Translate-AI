@@ -4,29 +4,27 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function executeSnap(mode) {
-    chrome.storage.sync.set({ mode: mode }, () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs.length > 0) {
-          let tab = tabs[0];
-          if (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) {
-            alert("Không thể chụp ảnh trên các trang cài đặt hệ thống của trình duyệt!");
-            return;
-          }
-          injectAndStartSnap(tab);
-          window.close();
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0) {
+        let tab = tabs[0];
+        if (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) {
+          alert("Không thể chụp ảnh trên các trang cài đặt hệ thống của trình duyệt!");
+          return;
         }
-      });
+        injectAndStartSnap(tab, mode);
+        window.close();
+      }
     });
   }
 
-  async function injectAndStartSnap(tab) {
+  async function injectAndStartSnap(tab, mode) {
     try {
       await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["css/content.css"] });
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ["lib/tesseract.min.js", "lib/jsQR.js", "js/content.js"]
       });
-      chrome.tabs.sendMessage(tab.id, { action: "START_SNAP" });
+      chrome.tabs.sendMessage(tab.id, { action: "START_SNAP", mode: mode });
     } catch (e) {
       console.error("Popup: Failed to inject scripts", e);
       if (tab.url.startsWith("file://")) {
