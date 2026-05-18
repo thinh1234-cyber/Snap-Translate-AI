@@ -1,74 +1,211 @@
 <div align="center">
 
-<img src="/assets/icon.png" alt="Logo" width="120">
+<img src="assets/icon.png" alt="Logo" width="120">
 
-# 🚀 SnapTranslate & QR Master
+# Snap & Translate AI
 
-**Một Extension mạnh mẽ kết hợp AI Vision để Dịch thuật và Xử lý QR tức thì.**
+> Chrome Extension chụp vùng màn hình → OCR offline → Dịch thuật bằng AI
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/your-repo)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Chrome Extension](https://img.shields.io/badge/Platform-Chrome_Extension-green.svg)](https://developer.chrome.com/docs/extensions/)
-[![AI-Powered](https://img.shields.io/badge/AI-ChatGPT_%7C_Local_LLM-orange.svg)]()
+[![Manifest](https://img.shields.io/badge/Manifest-V3-green.svg)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)
+[![AI](https://img.shields.io/badge/AI-ChatGPT_%7C_OpenAI_%7C_Local-orange.svg)]()
 
-[Tính năng](#-tính-năng-chính) • [Cài đặt](#-hướng-dẫn-cài-đặt) • [Kiến trúc](#-kiến-trúc-hệ-thống) • [Sử dụng](#-hướng-dẫn-sử-dụng)
+[Features](#-tính-năng) • [Install](#-cài-đặt) • [Usage](#-hướng-dẫn-sử-dụng) • [Architecture](#-kiến-trúc) • [Roadmap](#-lộ-trình)
 
 </div>
 
 ---
-<img src="/assets/V1.png" alt="Visualization" width="1000">
-## 🌟 Tính năng chính
 
-### 1. 📸 Snap-to-Translate (AI Vision)
-* **Chụp vùng chọn:** Quét bất kỳ phần nào trên màn hình trình duyệt.
-* **Đa dạng Model:** Hỗ trợ gửi ảnh qua **ChatGPT API (GPT-4o)** hoặc kết nối với **Local AI API** (như Ollama/LocalAI) để đảm bảo quyền riêng tư.
-* **Xác thực bảo mật:** Sử dụng **OAuth** để quản lý phiên đăng nhập và bảo vệ dữ liệu người dùng.
+## 🎯 Tổng quan
 
-### 2. 🔍 Smart QR Reader
-* **Giải mã tức thì:** Snap vùng chứa mã QR để đọc nội dung ngay lập tức.
-* **Xử lý thông minh:** Tự động nhận diện URL, thông tin Wifi, hoặc văn bản thuần túy.
+Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích xuất văn bản bằng OCR offline (Tesseract.js), sau đó dịch thuật qua 3 kênh: **Web ChatGPT**, **OpenAI API**, hoặc **Local LLM** (Ollama/LM Studio). Hỗ trợ đọc mã QR, lưu lịch sử, quản lý thuật ngữ chuyên ngành.
 
 ---
 
-## 🛠 Kiến trúc hệ thống
+## ✨ Tính năng
 
-Dự án được xây dựng với cấu trúc tối ưu cho Chrome Extension:
+### Core
+| Tính năng | Mô tả |
+|-----------|-------|
+| 📸 **Snap & Translate** | Kéo chuột chọn vùng → OCR → Dịch AI |
+| 📷 **Snap QR** | Chụp vùng chứa QR → Giải mã tức thì |
+| 🔄 **Resnap** | Snap lại không cần mở extension, phân biệt QR/Dịch |
+| ⌨️ **Keyboard Shortcut** | `Alt+X` kích hoạt nhanh |
 
-* **Frontend:** `HTML5`, `CSS3` (Giao diện Popup & Overlay), `JavaScript` (DOM Manipulation).
-* **Manifest:** `v3` (Tuân thủ tiêu chuẩn mới nhất của Google).
-* **Backend & Auth:**
-    * **OAuth:** Xử lý xác thực người dùng.
-    * **Server-side:** Relay API để bảo mật API Key.
-    * **Local Support:** Kết nối linh hoạt với Local AI API chạy trên máy cá nhân.
+### AI Channels
+| Kênh | Đặc điểm |
+|------|----------|
+| 💬 **Web ChatGPT** | Miễn phí, dùng session ChatGPT có sẵn |
+| 🔗 **Server API** | OpenAI-compatible, siêu tốc |
+| 🖥️ **Local API** | Ollama/LM Studio, offline, riêng tư |
+
+### Data & Storage
+| Tính năng | Mô tả |
+|-----------|-------|
+| 💾 **Memory** | Lịch sử snap, search, thống kê |
+| 📁 **File Storage** | Auto-save PNG + text vào Downloads |
+| 📊 **Analytics** | Dashboard theo tuần/tháng/tất cả |
+| 📖 **Glossary** | Quản lý thuật ngữ, custom category, CSV import/export |
+| 🔄 **Cloud Sync** | Export/Import JSON settings & memory |
+
+### UI/UX
+| Tính năng | Mô tả |
+|-----------|-------|
+| 🎨 **Dark Mode** | Theme sáng/tối nhất quán |
+| 📐 **2-Column Settings** | Layout gọn gàng, dễ cấu hình |
+| 🏗 **System Architecture** | Sơ đồ tương tác nội bộ |
+| 🚀 **Evolution Roadmap** | Lộ trình phát triển |
 
 ---
 
-🚀 Hướng dẫn cài đặt
-Tải mã nguồn: git clone https://github.com/thinh1234-cyber/Snap-Translate-AI.git
+## 📦 Cài đặt
 
-Mở Chrome: Truy cập đường dẫn chrome://extensions/.
+### Yêu cầu
+- Chrome 88+ (Manifest V3)
+- Không cần server backend
 
-Bật chế độ nhà phát triển: Gạt công tắc Developer mode ở góc trên bên phải.
+### Các bước
 
-Load Extension: Nhấn nút Load unpacked và chọn thư mục chứa mã nguồn của bạn.
+1. **Tải source**
+   ```bash
+   git clone https://github.com/thinh1234-cyber/Snap-Translate-AI.git
+   ```
 
-📖 Hướng dẫn sử dụng
-Mở Extension: Nhấn vào icon trên thanh công cụ.
+2. **Mở Chrome Extensions**
+   - Truy cập `chrome://extensions/`
+   - Bật **Developer mode** (góc phải)
 
-Chọn chế độ:
+3. **Load extension**
+   - Nhấn **Load unpacked**
+   - Chọn thư mục project
 
-Bấm "Snap & Translate": Kéo chuột chọn vùng văn bản cần dịch.
+4. **Sử dụng**
+   - Click icon trên toolbar
+   - Hoặc nhấn `Alt+X`
 
-Bấm "Read QR": Chọn vùng chứa mã QR.
+> 💡 Để snap trên file PDF local: Bật *"Allow access to file URLs"* trong chi tiết extension.
 
-Kết quả: Bản dịch hoặc nội dung QR sẽ hiển thị ngay trong popup hoặc một thông báo thông minh trên màn hình.
+---
 
-🤝 Đóng góp
-Mọi ý đóng góp hoặc báo lỗi vui lòng mở một Issue hoặc tạo Pull Request. Mình rất hoan nghênh các nâng cấp về:
+## 📖 Hướng dẫn sử dụng
 
-Tích hợp thêm các Local LLM mới.
+### Snap Dịch
+1. Mở extension → Click **Snap Dịch**
+2. Kéo chuột chọn vùng văn bản
+3. OCR tự động trích xuất chữ
+4. Click **💬 Dịch** để gửi ChatGPT
 
-Cải thiện UI/UX cho phần vùng chọn ảnh.
+### Snap QR
+1. Click **Snap Đọc QR**
+2. Chọn vùng chứa mã QR
+3. Kết quả hiển thị ngay
+
+### Resnap
+- Sau khi có kết quả → Click **🔄 Resnap** → Chọn vùng mới
+- Không cần mở lại extension
+
+### Cấu hình
+| Setting | Vị trí | Mô tả |
+|---------|--------|-------|
+| Chuyên ngành | Settings → Chung | Ngữ cảnh dịch cho AI |
+| AI Channel | Settings → Chung | Web/API/Local |
+| API Config | Settings → Chung | URL, Model, Key |
+| Autoprompt | Settings → Chung | Custom instruction cho AI |
+| Memory Limit | Settings → Lịch sử | Giới hạn entry (10-500) |
+| Glossary | Settings → Glossary | Thuật ngữ chuyên ngành |
+
+---
+
+## 🏗 Kiến trúc
+
+### Cấu trúc thư mục
+```
+├── js/
+│   ├── background.js          # Service worker, message router
+│   ├── content.js             # Content script, overlay, OCR UI
+│   ├── popup.js               # Popup UI logic
+│   ├── options.js             # Settings page logic
+│   ├── chatgpt_automator.js   # ChatGPT tab automator
+│   └── modules/
+│       ├── snap-controller.js     # Keyboard shortcut handler
+│       ├── translation-engine.js  # API translation logic
+│       ├── chatgpt-bridge.js      # ChatGPT tab management
+│       ├── ocr-manager.js         # iframe prompt injection
+│       ├── memory-manager.js      # History CRUD
+│       └── file-saver.js          # PNG + text storage
+├── lib/
+│   ├── tesseract.min.js       # OCR engine
+│   ├── tesseract-core.wasm.js # WASM core
+│   ├── jsQR.js                # QR decoder
+│   └── lang-data/             # Vietnamese + English data
+├── html/                      # UI pages
+├── css/                       # Styles
+└── manifest.json              # Extension config (MV3)
+```
+
+### Luồng hoạt động
+```
+Popup → Inject Scripts → Content Script → Capture Screen
+                                                    ↓
+                                        Crop + OCR (Tesseract)
+                                                    ↓
+                              ┌─────────────────────┼─────────────────────┐
+                              ↓                     ↓                     ↓
+                        QR Mode              Translate Mode          Save to Memory
+                        (jsQR)               (ChatGPT/API)          (PNG + Text)
+```
+
+### Chi tiết kiến trúc
+→ [Xem sơ đồ tương tác](html/architecture.html) trong tab **System** của Settings
+
+---
+
+## 🔧 Công nghệ
+
+| Layer | Technology |
+|-------|------------|
+| Extension | Manifest V3, Service Worker |
+| OCR | Tesseract.js 4.x (WASM, offline) |
+| QR | jsQR |
+| AI | ChatGPT Web, OpenAI API, Local LLM |
+| Storage | chrome.storage.sync + chrome.storage.local |
+| UI | Vanilla JS, CSS Variables, Dark Mode |
+
+---
+
+## 🚀 Lộ trình
+
+### Đã hoàn thành (v1.2)
+- ✅ ES Modules architecture
+- ✅ Multi-channel AI (Web/API/Local)
+- ✅ Tesseract OCR offline
+- ✅ QR code reader
+- ✅ Memory system + File storage
+- ✅ Resnap feature
+- ✅ Dark mode
+- ✅ 2-column settings
+- ✅ Cloud Sync (JSON import/export)
+- ✅ Analytics Dashboard
+- ✅ Glossary Manager
+
+### Sắp tới
+- [ ] Auto Cloud Sync (Firebase/Google Drive)
+- [ ] Glossary auto-apply trong translation prompt
+- [ ] Advanced analytics với Chart.js
+- [ ] Batch snap (chụp nhiều vùng)
+- [ ] Multi-language UI (i18n)
+- [ ] Smart notifications
+
+→ [Xem đầy đủ roadmap](html/evolution.html)
+
+---
+
+## 📝 License
+
+MIT — Xem [LICENSE](LICENSE)
+
+---
 
 <div align="center">
 <p>Made with ❤️ by <b>Nguyễn Thịnh - Kyle</b></p>
