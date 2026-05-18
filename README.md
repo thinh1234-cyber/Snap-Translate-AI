@@ -49,14 +49,6 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 | 📖 **Glossary** | Quản lý thuật ngữ, custom category, CSV import/export |
 | 🔄 **Cloud Sync** | Export/Import JSON settings & memory |
 
-### UI/UX
-| Tính năng | Mô tả |
-|-----------|-------|
-| 🎨 **Dark Mode** | Theme sáng/tối nhất quán |
-| 📐 **2-Column Settings** | Layout gọn gàng, dễ cấu hình |
-| 🏗 **System Architecture** | Sơ đồ tương tác nội bộ |
-| 🚀 **Evolution Roadmap** | Lộ trình phát triển |
-
 ---
 
 ## 📦 Cài đặt
@@ -101,20 +93,6 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 2. Chọn vùng chứa mã QR
 3. Kết quả hiển thị ngay
 
-### Resnap
-- Sau khi có kết quả → Click **🔄 Resnap** → Chọn vùng mới
-- Không cần mở lại extension
-
-### Cấu hình
-| Setting | Vị trí | Mô tả |
-|---------|--------|-------|
-| Chuyên ngành | Settings → Chung | Ngữ cảnh dịch cho AI |
-| AI Channel | Settings → Chung | Web/API/Local |
-| API Config | Settings → Chung | URL, Model, Key |
-| Autoprompt | Settings → Chung | Custom instruction cho AI |
-| Memory Limit | Settings → Lịch sử | Giới hạn entry (10-500) |
-| Glossary | Settings → Glossary | Thuật ngữ chuyên ngành |
-
 ---
 
 ## 🏗 Kiến trúc
@@ -122,43 +100,26 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 ### Cấu trúc thư mục
 ```
 ├── js/
-│   ├── background.js          # Service worker, message router
-│   ├── content.js             # Content script, overlay, OCR UI
-│   ├── popup.js               # Popup UI logic
-│   ├── options.js             # Settings page logic
-│   ├── chatgpt_automator.js   # ChatGPT tab automator
+│   ├── background.js          
+│   ├── content.js             
+│   ├── popup.js              
+│   ├── options.js             
+│   ├── chatgpt_automator.js   
 │   └── modules/
-│       ├── snap-controller.js     # Keyboard shortcut handler
-│       ├── translation-engine.js  # API translation logic
-│       ├── chatgpt-bridge.js      # ChatGPT tab management
-│       ├── ocr-manager.js         # iframe prompt injection
-│       ├── memory-manager.js      # History CRUD
-│       └── file-saver.js          # PNG + text storage
+│       ├── snap-controller.js     
+│       ├── translation-engine.js  
+│       ├── chatgpt-bridge.js      
+│       ├── ocr-manager.js         
+│       ├── memory-manager.js      
+│       └── file-saver.js          
 ├── lib/
-│   ├── tesseract.min.js       # OCR engine
-│   ├── tesseract-core.wasm.js # WASM core
-│   ├── jsQR.js                # QR decoder
-│   └── lang-data/             # Vietnamese + English data
-├── html/                      # UI pages
-├── css/                       # Styles
-└── manifest.json              # Extension config (MV3)
-```
-
-### Luồng hoạt động
-```
-Popup → Inject Scripts → Content Script → Capture Screen
-                                                    ↓
-                                        Crop + OCR (Tesseract)
-                                                    ↓
-                              ┌─────────────────────┼─────────────────────┐
-                              ↓                     ↓                     ↓
-                        QR Mode              Translate Mode          Save to Memory
-                        (jsQR)               (ChatGPT/API)          (PNG + Text)
-```
-
-### Chi tiết kiến trúc
-→ [Xem sơ đồ tương tác](html/architecture.html) trong tab **System** của Settings
-
+│   ├── tesseract.min.js      
+│   ├── tesseract-core.wasm.js 
+│   ├── jsQR.js               
+│   └── lang-data/             
+├── html/                      
+├── css/                       
+└── manifest.json              
 ---
 
 ## 🔧 Công nghệ
@@ -171,33 +132,6 @@ Popup → Inject Scripts → Content Script → Capture Screen
 | AI | ChatGPT Web, OpenAI API, Local LLM |
 | Storage | chrome.storage.sync + chrome.storage.local |
 | UI | Vanilla JS, CSS Variables, Dark Mode |
-
----
-
-## 🚀 Lộ trình
-
-### Đã hoàn thành (v1.2)
-- ✅ ES Modules architecture
-- ✅ Multi-channel AI (Web/API/Local)
-- ✅ Tesseract OCR offline
-- ✅ QR code reader
-- ✅ Memory system + File storage
-- ✅ Resnap feature
-- ✅ Dark mode
-- ✅ 2-column settings
-- ✅ Cloud Sync (JSON import/export)
-- ✅ Analytics Dashboard
-- ✅ Glossary Manager
-
-### Sắp tới
-- [ ] Auto Cloud Sync (Firebase/Google Drive)
-- [ ] Glossary auto-apply trong translation prompt
-- [ ] Advanced analytics với Chart.js
-- [ ] Batch snap (chụp nhiều vùng)
-- [ ] Multi-language UI (i18n)
-- [ ] Smart notifications
-
-→ [Xem đầy đủ roadmap](html/evolution.html)
 
 ---
 
