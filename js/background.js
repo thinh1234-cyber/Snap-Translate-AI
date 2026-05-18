@@ -7,6 +7,14 @@ import { handleTranslation } from './modules/translation-engine.js';
 import { openChatGPTWindow } from './modules/chatgpt-bridge.js';
 import { prepChatGPTCookies, sendPromptToIframe } from './modules/ocr-manager.js';
 import { saveSnap, getHistory, deleteSnap, clearHistory, searchHistory, setMaxEntries, getMaxEntriesSetting } from './modules/memory-manager.js';
+import { saveSnapFiles, autoDeleteOldFiles, deleteSavedFile, getSavedFilesList, clearSavedFiles } from './modules/file-saver.js';
+
+// ── Auto-delete old files on startup ──────────────────────
+autoDeleteOldFiles().then(result => {
+  if (result.deleted > 0) {
+    console.log(`[SnapTranslate] Auto-deleted ${result.deleted} old files (>30 days). ${result.remaining} remaining.`);
+  }
+});
 
 // ── Register command listener ─────────────────────────────
 registerCommandListener();
@@ -82,6 +90,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "GET_MEMORY_LIMIT":
       getMaxEntriesSetting().then(limit => {
         sendResponse(limit);
+      });
+      return true;
+
+    case "SAVE_SNAP_FILES":
+      saveSnapFiles(request.dataUrl, request.textContent, request.mode).then(results => {
+        sendResponse(results);
+      });
+      return true;
+
+    case "GET_SAVED_FILES":
+      getSavedFilesList().then(files => {
+        sendResponse(files);
+      });
+      return true;
+
+    case "DELETE_SAVED_FILE":
+      deleteSavedFile(request.id).then(files => {
+        sendResponse({ success: true, count: files.length });
+      });
+      return true;
+
+    case "CLEAR_SAVED_FILES":
+      clearSavedFiles().then(() => {
+        sendResponse({ success: true });
       });
       return true;
 

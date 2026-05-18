@@ -253,11 +253,75 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // File storage functionality
+  const fileList = document.getElementById("file-list");
+  const fileCount = document.getElementById("file-count");
+  const fileRefreshBtn = document.getElementById("file-refresh-btn");
+  const fileClearBtn = document.getElementById("file-clear-btn");
+
+  function loadSavedFiles() {
+    chrome.runtime.sendMessage({ action: "GET_SAVED_FILES" }, (files) => {
+      if (!chrome.runtime.lastError && files && files.length > 0) {
+        fileCount.textContent = files.length;
+        fileList.innerHTML = files.map(file => {
+          const date = new Date(file.timestamp);
+          const timeStr = date.toLocaleString('vi-VN');
+          const modeLabel = file.mode === "qr" ? "QR" : "Dịch";
+          const modeClass = file.mode === "qr" ? "qr" : "translate";
+          const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+          const deleteIn = Math.max(0, 30 - daysAgo);
+
+          return `
+            <div class="memory-entry" data-id="${file.id}">
+              <div class="memory-entry-header">
+                <span class="memory-entry-time">STT #${file.sequence} — ${timeStr}</span>
+                <span class="memory-entry-mode ${modeClass}">${modeLabel}</span>
+              </div>
+              <div class="memory-entry-text">
+                🖼 ${file.pngFilename || "N/A"}<br>
+                📄 ${file.txtFilename || "N/A"}<br>
+                <span style="color:var(--snap-options-desc, #5f6368); font-size:11px;">⏰ Xóa sau: ${deleteIn} ngày</span>
+              </div>
+              <div class="memory-entry-actions">
+                <button class="delete-btn" data-id="${file.id}">🗑 Xóa</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        fileList.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-id');
+            chrome.runtime.sendMessage({ action: "DELETE_SAVED_FILE", id }, () => {
+              loadSavedFiles();
+            });
+          });
+        });
+      } else {
+        fileList.innerHTML = '<div class="memory-empty">📭 Chưa có files nào được lưu.</div>';
+        fileCount.textContent = "0";
+      }
+    });
+  }
+
+  fileRefreshBtn.addEventListener("click", () => {
+    loadSavedFiles();
+  });
+
+  fileClearBtn.addEventListener("click", () => {
+    if (confirm("Xóa toàn bộ files đã lưu? Hành động này không thể hoàn tác.")) {
+      chrome.runtime.sendMessage({ action: "CLEAR_SAVED_FILES" }, () => {
+        loadSavedFiles();
+      });
+    }
+  });
+
   // Load memory on first tab switch
   const observer = new MutationObserver(() => {
     if (document.getElementById("tab-memory").classList.contains("active")) {
       loadMemoryHistory();
       loadMemoryLimit();
+      loadSavedFiles();
       observer.disconnect();
     }
   });

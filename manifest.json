@@ -25,7 +25,8 @@
     "cookies",
     "webNavigation",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "downloads"
   ],
   "host_permissions": [
     "*://chatgpt.com/*",

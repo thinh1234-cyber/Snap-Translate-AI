@@ -123,6 +123,25 @@
           💡 Khi vượt quá giới hạn, các entry cũ nhất sẽ tự động bị xóa.
         </div>
       </div>
+
+      <div class="card" id="file-storage-card">
+        <div class="section-title">📁 File Storage (PNG + Text)</div>
+        <p class="description">Ảnh và text được lưu tự động vào thư mục Downloads/snap-translate/. Tự động xóa sau 30 ngày.</p>
+
+        <div class="memory-stats" id="file-stats">
+          <span class="stat">📊 Tổng files: <b id="file-count">0</b></span>
+          <span class="stat">🗑 Tự động xóa: <b>30 ngày</b></span>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <button id="file-refresh-btn" class="btn">🔄 Refresh</button>
+          <button id="file-clear-btn" class="btn btn-danger">🗑 Xóa tất cả files</button>
+        </div>
+
+        <div id="file-list">
+          <div class="memory-empty">📭 Đang tải danh sách files...</div>
+        </div>
+      </div>
     </div>
 
     <!-- ARCHITECTURE TAB -->

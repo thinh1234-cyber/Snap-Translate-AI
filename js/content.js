@@ -136,6 +136,12 @@ if (typeof window.snapTranslateInjected === 'undefined') {
                 action: "SAVE_SNAP",
                 entry: { mode: "qr", ocrText: "", translation: code.data, sourceUrl: window.location.href }
               });
+              chrome.runtime.sendMessage({
+                action: "SAVE_SNAP_FILES",
+                dataUrl: croppedDataUrl,
+                textContent: code.data,
+                mode: "qr"
+              });
             } else {
               updatePopupError("Không tìm thấy thông tin quét mã QR nào trong hình.");
             }
@@ -194,6 +200,12 @@ if (typeof window.snapTranslateInjected === 'undefined') {
               chrome.runtime.sendMessage({
                 action: "SAVE_SNAP",
                 entry: { mode: "translate", ocrText: extractedText || "", translation: res.translation, sourceUrl: window.location.href }
+              });
+              chrome.runtime.sendMessage({
+                action: "SAVE_SNAP_FILES",
+                dataUrl: croppedDataUrl,
+                textContent: extractedText ? `[OCR]\n${extractedText}\n\n[TRANSLATION]\n${res.translation}` : res.translation,
+                mode: "translate"
               });
             } else {
               updatePopupError(res ? res.error : "Mất kết nối với Trung tâm điều khiển. Thử tải lại thẻ.");
