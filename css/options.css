@@ -41,7 +41,7 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 .container {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -417,4 +417,64 @@ input[type="text"]:focus, textarea:focus, select:focus {
 .shortcut-key {
   font-family: monospace; font-weight: 600; padding: 2px 8px;
   background: var(--snap-options-btn-bg, #e8eaed); border-radius: 4px;
+}
+
+/* 2-Column Layout for General Tab */
+#tab-general {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+#tab-general > .card { margin: 0; }
+#tab-general > .full-width { grid-column: 1 / -1; }
+#tab-general > .full-width-actions { grid-column: 1 / -1; margin-top: 8px; }
+
+/* Cloud Sync Card */
+.sync-actions { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
+.sync-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sync-label { font-weight: 600; min-width: 80px; }
+
+/* Analytics Dashboard */
+.analytics-filters { display: flex; gap: 8px; margin: 12px 0; }
+.analytics-filter {
+  padding: 6px 14px; border: 1px solid var(--snap-options-border);
+  border-radius: 6px; background: var(--snap-options-btn-bg);
+  cursor: pointer; font-size: 13px; color: var(--snap-options-btn-text);
+}
+.analytics-filter.active {
+  background: var(--snap-options-primary-bg); color: var(--snap-options-primary-text);
+  border-color: var(--snap-options-primary-bg);
+}
+.analytics-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px;
+}
+.analytics-stat { text-align: center; padding: 12px; background: var(--snap-options-bg); border-radius: 8px; }
+.analytics-value { font-size: 24px; font-weight: 700; color: var(--snap-options-title); }
+.analytics-label { font-size: 11px; color: var(--snap-options-desc); margin-top: 4px; }
+
+/* Glossary Tab */
+.glossary-add { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.glossary-add input { flex: 1; min-width: 120px; }
+.glossary-controls { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.glossary-controls input { flex: 1; min-width: 150px; }
+.glossary-stats { display: flex; gap: 16px; margin: 12px 0; font-size: 13px; }
+.glossary-entry {
+  padding: 10px 12px; background: var(--snap-options-bg); border-radius: 6px;
+  margin-bottom: 6px;
+}
+.glossary-entry-header { display: flex; align-items: center; gap: 8px; }
+.glossary-term { font-weight: 600; color: var(--snap-options-title); }
+.glossary-arrow { color: var(--snap-options-desc); }
+.glossary-translation { color: var(--snap-options-text); }
+.glossary-category-tag {
+  font-size: 11px; padding: 2px 8px; background: var(--snap-options-btn-bg);
+  border-radius: 4px; color: var(--snap-options-desc);
+}
+.glossary-toggle { margin-left: auto; display: flex; align-items: center; }
+.glossary-delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  #tab-general { grid-template-columns: 1fr; }
+  .analytics-grid { grid-template-columns: repeat(2, 1fr); }
 }

@@ -12,6 +12,7 @@
       <div class="header-tabs">
         <button class="tab-btn active" data-tab="general">🔧 Chung</button>
         <button class="tab-btn" data-tab="memory">📝 Lịch sử</button>
+        <button class="tab-btn" data-tab="glossary">📖 Glossary</button>
         <button class="tab-btn" data-tab="architecture">🏗 System</button>
       </div>
     </div>
@@ -95,12 +96,62 @@
         <a href="https://chatgpt.com" target="_blank" class="link">Mở ChatGPT để đăng nhập</a>
       </div>
 
-      <button id="save-btn" class="btn btn-primary">💾 Lưu cài đặt</button>
-      <div id="save-msg" class="msg">Đã lưu thành công!</div>
+      <div class="card full-width" id="sync-card">
+        <div class="section-title">🔄 Cloud Sync & Backup</div>
+        <p class="description">Xuất hoặc nhập cài đặt và lịch sử dưới dạng JSON.</p>
+        <div class="sync-actions">
+          <div class="sync-group">
+            <span class="sync-label">Cài đặt:</span>
+            <button id="export-settings-btn" class="btn">💾 Export Settings</button>
+            <button id="import-settings-btn" class="btn">📂 Import Settings</button>
+          </div>
+          <div class="sync-group">
+            <span class="sync-label">Lịch sử:</span>
+            <button id="export-memory-btn" class="btn">💾 Export Memory</button>
+            <button id="import-memory-btn" class="btn">📂 Import Memory</button>
+          </div>
+        </div>
+        <input type="file" id="import-settings-file" accept=".json" style="display:none">
+        <input type="file" id="import-memory-file" accept=".json" style="display:none">
+        <div id="sync-msg" class="msg" style="display:none"></div>
+      </div>
+
+      <div class="full-width-actions">
+        <button id="save-btn" class="btn btn-primary">💾 Lưu cài đặt</button>
+        <div id="save-msg" class="msg">Đã lưu thành công!</div>
+      </div>
     </div>
 
     <!-- MEMORY TAB -->
     <div class="tab-content" id="tab-memory">
+      <div class="card" id="analytics-card">
+        <div class="section-title">📊 Analytics Dashboard</div>
+        <p class="description">Thống kê hoạt động snap và dịch thuật.</p>
+        <div class="analytics-filters">
+          <button class="analytics-filter active" data-range="week">Tuần này</button>
+          <button class="analytics-filter" data-range="month">Tháng này</button>
+          <button class="analytics-filter" data-range="all">Tất cả</button>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-stat">
+            <div class="analytics-value" id="analytics-total">0</div>
+            <div class="analytics-label">Tổng Snap</div>
+          </div>
+          <div class="analytics-stat">
+            <div class="analytics-value" id="analytics-translate">0</div>
+            <div class="analytics-label">🌍 Dịch</div>
+          </div>
+          <div class="analytics-stat">
+            <div class="analytics-value" id="analytics-qr">0</div>
+            <div class="analytics-label">📷 QR</div>
+          </div>
+          <div class="analytics-stat">
+            <div class="analytics-value" id="analytics-chars">0</div>
+            <div class="analytics-label">Ký tự đã dịch</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card" id="memory-card">
         <div class="section-title">📝 Lịch sử Snap</div>
         <p class="description">Xem lại các lần chụp và dịch trước đây.</p>
@@ -151,6 +202,39 @@
 
         <div id="file-list">
           <div class="memory-empty">📭 Đang tải danh sách files...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GLOSSARY TAB -->
+    <div class="tab-content" id="tab-glossary">
+      <div class="card" id="glossary-card">
+        <div class="section-title">📖 Glossary & Terminology</div>
+        <p class="description">Quản lý thuật ngữ chuyên ngành. Auto-apply khi dịch.</p>
+
+        <div class="glossary-add">
+          <input type="text" id="glossary-source" placeholder="Thuật ngữ gốc (VD: API)">
+          <input type="text" id="glossary-target" placeholder="Bản dịch (VD: Giao diện lập trình)">
+          <input type="text" id="glossary-category" placeholder="Category (VD: IT)">
+          <button id="glossary-add-btn" class="btn btn-primary">+ Thêm</button>
+        </div>
+
+        <div class="glossary-controls">
+          <input type="text" id="glossary-search" placeholder="🔍 Tìm kiếm thuật ngữ...">
+          <button id="glossary-export-btn" class="btn">📤 Export CSV</button>
+          <button id="glossary-import-btn" class="btn">📥 Import CSV</button>
+          <button id="glossary-clear-btn" class="btn btn-danger">🗑 Xóa tất cả</button>
+        </div>
+        <input type="file" id="glossary-import-file" accept=".csv" style="display:none">
+
+        <div class="glossary-stats" id="glossary-stats">
+          <span class="stat">📊 Tổng: <b id="glossary-count">0</b></span>
+          <span class="stat">✅ Active: <b id="glossary-active">0</b></span>
+          <span class="stat">📁 Categories: <b id="glossary-categories">0</b></span>
+        </div>
+
+        <div id="glossary-list">
+          <div class="memory-empty">📭 Chưa có thuật ngữ nào.</div>
         </div>
       </div>
     </div>

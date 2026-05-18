@@ -11,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.classList.add("active");
       document.getElementById(`tab-${tabId}`).classList.add("active");
 
-      if (tabId === "memory") loadMemoryHistory();
+      if (tabId === "memory") { loadMemoryHistory(); updateAnalytics(); }
+      if (tabId === "glossary") loadGlossary();
     });
   });
 
@@ -328,10 +329,271 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMemoryHistory();
       loadMemoryLimit();
       loadSavedFiles();
+      updateAnalytics();
       observer.disconnect();
+    }
+    if (document.getElementById("tab-glossary").classList.contains("active")) {
+      loadGlossary();
     }
   });
   observer.observe(document.getElementById("tab-memory"), { attributes: true, attributeFilter: ["class"] });
+
+  // ── Cloud Sync & Backup ──────────────────────────────────
+  function dateStr() { return new Date().toISOString().slice(0, 10); }
+
+  function showSyncMsg(msg) {
+    const el = document.getElementById("sync-msg");
+    el.textContent = msg; el.style.display = "block";
+    setTimeout(() => { el.style.display = "none"; }, 3000);
+  }
+
+  function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showSyncMsg(`✅ Đã export ${filename}`);
+  }
+
+  document.getElementById("export-settings-btn").addEventListener("click", () => {
+    chrome.storage.sync.get(null, (data) => {
+      downloadJSON(data, `snap-settings-${dateStr()}.json`);
+    });
+  });
+
+  document.getElementById("import-settings-btn").addEventListener("click", () => {
+    document.getElementById("import-settings-file").click();
+  });
+  document.getElementById("import-settings-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        chrome.storage.sync.set(data, () => {
+          showSyncMsg("✅ Đã import cài đặt thành công! Reload để áp dụng.");
+          setTimeout(() => location.reload(), 1500);
+        });
+      } catch(err) {
+        showSyncMsg("❌ File JSON không hợp lệ: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("export-memory-btn").addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "GET_SNAP_HISTORY" }, (entries) => {
+      downloadJSON(entries || [], `snap-memory-${dateStr()}.json`);
+    });
+  });
+
+  document.getElementById("import-memory-btn").addEventListener("click", () => {
+    document.getElementById("import-memory-file").click();
+  });
+  document.getElementById("import-memory-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const entries = JSON.parse(ev.target.result);
+        chrome.storage.local.set({ snap_history: entries }, () => {
+          showSyncMsg("✅ Đã import lịch sử thành công!");
+          loadMemoryHistory();
+        });
+      } catch(err) {
+        showSyncMsg("❌ File JSON không hợp lệ: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // ── Analytics Dashboard ──────────────────────────────────
+  let analyticsRange = "week";
+
+  document.querySelectorAll(".analytics-filter").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".analytics-filter").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      analyticsRange = btn.dataset.range;
+      updateAnalytics();
+    });
+  });
+
+  function updateAnalytics(entries) {
+    if (!entries) {
+      chrome.runtime.sendMessage({ action: "GET_SNAP_HISTORY" }, (data) => {
+        updateAnalytics(data || []);
+      });
+      return;
+    }
+
+    const now = new Date();
+    let filtered = entries;
+
+    if (analyticsRange === "week") {
+      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      filtered = entries.filter(e => new Date(e.timestamp) >= weekAgo);
+    } else if (analyticsRange === "month") {
+      const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      filtered = entries.filter(e => new Date(e.timestamp) >= monthAgo);
+    }
+
+    document.getElementById("analytics-total").textContent = filtered.length;
+    document.getElementById("analytics-translate").textContent = filtered.filter(e => e.mode === "translate").length;
+    document.getElementById("analytics-qr").textContent = filtered.filter(e => e.mode === "qr").length;
+
+    const totalChars = filtered.reduce((sum, e) => sum + (e.ocrText?.length || 0) + (e.translation?.length || 0), 0);
+    document.getElementById("analytics-chars").textContent = totalChars > 9999 ? (totalChars / 1000).toFixed(1) + "K" : totalChars;
+  }
+
+  // ── Glossary & Terminology Manager ───────────────────────
+  function loadGlossary(query = "") {
+    chrome.storage.sync.get({ glossary: [] }, (data) => {
+      renderGlossary(data.glossary || [], query);
+    });
+  }
+
+  function renderGlossary(entries, query = "") {
+    const filtered = query ? entries.filter(e =>
+      e.source.toLowerCase().includes(query.toLowerCase()) ||
+      e.target.toLowerCase().includes(query.toLowerCase()) ||
+      (e.category || "").toLowerCase().includes(query.toLowerCase())
+    ) : entries;
+
+    document.getElementById("glossary-count").textContent = entries.length;
+    document.getElementById("glossary-active").textContent = entries.filter(e => e.enabled !== false).length;
+    const cats = [...new Set(entries.map(e => e.category).filter(Boolean))];
+    document.getElementById("glossary-categories").textContent = cats.length;
+
+    if (filtered.length === 0) {
+      document.getElementById("glossary-list").innerHTML = '<div class="memory-empty">📭 Không tìm thấy thuật ngữ nào.</div>';
+      return;
+    }
+
+    document.getElementById("glossary-list").innerHTML = filtered.map(entry => `
+      <div class="glossary-entry" data-id="${entry.id}">
+        <div class="glossary-entry-header">
+          <span class="glossary-term">${escapeHtml(entry.source)}</span>
+          <span class="glossary-arrow">→</span>
+          <span class="glossary-translation">${escapeHtml(entry.target)}</span>
+          <span class="glossary-category-tag">${escapeHtml(entry.category || "General")}</span>
+          <label class="glossary-toggle">
+            <input type="checkbox" ${entry.enabled !== false ? 'checked' : ''} data-id="${entry.id}">
+          </label>
+          <button class="glossary-delete-btn" data-id="${entry.id}">🗑</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll(".glossary-toggle input").forEach(cb => {
+      cb.addEventListener("change", () => {
+        toggleGlossaryEntry(cb.dataset.id, cb.checked);
+      });
+    });
+    document.querySelectorAll(".glossary-delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        deleteGlossaryEntry(btn.dataset.id);
+      });
+    });
+  }
+
+  function addGlossaryEntry(source, target, category) {
+    chrome.storage.sync.get({ glossary: [] }, (data) => {
+      const entries = data.glossary || [];
+      entries.unshift({ id: Date.now().toString(), source, target, category, enabled: true });
+      chrome.storage.sync.set({ glossary: entries }, () => {
+        loadGlossary();
+      });
+    });
+  }
+
+  function toggleGlossaryEntry(id, enabled) {
+    chrome.storage.sync.get({ glossary: [] }, (data) => {
+      const entries = data.glossary.map(e => e.id === id ? { ...e, enabled } : e);
+      chrome.storage.sync.set({ glossary: entries }, () => loadGlossary());
+    });
+  }
+
+  function deleteGlossaryEntry(id) {
+    chrome.storage.sync.get({ glossary: [] }, (data) => {
+      const entries = data.glossary.filter(e => e.id !== id);
+      chrome.storage.sync.set({ glossary: entries }, () => loadGlossary());
+    });
+  }
+
+  function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showSyncMsg(`✅ Đã export ${filename}`);
+  }
+
+  document.getElementById("glossary-add-btn").addEventListener("click", () => {
+    const source = document.getElementById("glossary-source").value.trim();
+    const target = document.getElementById("glossary-target").value.trim();
+    const category = document.getElementById("glossary-category").value.trim();
+    if (!source || !target) return;
+    addGlossaryEntry(source, target, category);
+    document.getElementById("glossary-source").value = "";
+    document.getElementById("glossary-target").value = "";
+    document.getElementById("glossary-category").value = "";
+  });
+
+  document.getElementById("glossary-search").addEventListener("input", (e) => {
+    loadGlossary(e.target.value);
+  });
+
+  document.getElementById("glossary-export-btn").addEventListener("click", () => {
+    chrome.storage.sync.get({ glossary: [] }, (data) => {
+      const csv = "source,target,category,enabled\n" +
+        (data.glossary || []).map(e => `"${e.source}","${e.target}","${e.category || ''}",${e.enabled !== false}`).join("\n");
+      downloadCSV(csv, `snap-glossary-${dateStr()}.csv`);
+    });
+  });
+
+  document.getElementById("glossary-import-btn").addEventListener("click", () => {
+    document.getElementById("glossary-import-file").click();
+  });
+
+  document.getElementById("glossary-import-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const lines = ev.target.result.split("\n").filter(l => l.trim());
+        const entries = lines.slice(1).map((line, i) => {
+          const vals = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+          return {
+            id: Date.now().toString() + i,
+            source: vals[0]?.replace(/"/g, "") || "",
+            target: vals[1]?.replace(/"/g, "") || "",
+            category: vals[2]?.replace(/"/g, "") || "",
+            enabled: vals[3]?.trim() !== "false"
+          };
+        }).filter(e => e.source && e.target);
+
+        chrome.storage.sync.get({ glossary: [] }, (data) => {
+          const merged = [...entries, ...data.glossary];
+          chrome.storage.sync.set({ glossary: merged }, () => loadGlossary());
+        });
+      } catch(err) {
+        showSyncMsg("❌ Lỗi import CSV: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("glossary-clear-btn").addEventListener("click", () => {
+    if (confirm("Xóa toàn bộ glossary?")) {
+      chrome.storage.sync.set({ glossary: [] }, () => loadGlossary());
+    }
+  });
 });
 
 function applyTheme(isDark) {
