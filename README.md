@@ -2,138 +2,61 @@
 
 <img src="assets/icon.png" alt="Logo" width="120">
 
-# Snap & Translate AI
+# Snap Decode
 
-> Chrome Extension chụp vùng màn hình → OCR offline → Dịch thuật bằng AI
+> Chrome Extension chụp vùng màn hình QR + OCR
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Manifest](https://img.shields.io/badge/Manifest-V3-green.svg)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)
-[![AI](https://img.shields.io/badge/AI-ChatGPT_%7C_OpenAI_%7C_Local-orange.svg)]()
+[![Backend](https://img.shields.io/badge/Backend-Native_Messaging_%7C_OpenCV_%7C_RapidOCR-green.svg)]()
 
-[Features](#-tính-năng) • [Install](#-cài-đặt) • [Usage](#-hướng-dẫn-sử-dụng) • [Architecture](#-kiến-trúc) • [Roadmap](#-lộ-trình)
+[Tính năng](#-tính-năng) • [Cài đặt & Kích hoạt](#-cài-đặt--kích-hoạt) • [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
 
 </div>
 
 ---
 
-## 🎯 Tổng quan
-<img src="assets/V1.png" alt="Logo" width="800">
+## 🎯 Điểm nổi bật & Cơ chế Zero-Touch
 
-Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích xuất văn bản bằng OCR offline (Tesseract.js), sau đó dịch thuật qua 3 kênh: **Web ChatGPT**, **OpenAI API**, hoặc **Local LLM** (Ollama/LM Studio). Hỗ trợ đọc mã QR, lưu lịch sử, quản lý thuật ngữ chuyên ngành.
-
----
-
-## ✨ Tính năng
-
-### Core
-| Tính năng | Mô tả |
-|-----------|-------|
-| 📸 **Snap & Translate** | Kéo chuột chọn vùng → OCR → Dịch AI |
-| 📷 **Snap QR** | Chụp vùng chứa QR → Giải mã tức thì |
-| 🔄 **Resnap** | Snap lại không cần mở extension, phân biệt QR/Dịch |
-| ⌨️ **Keyboard Shortcut** | `Alt+X` kích hoạt nhanh |
-
-### AI Channels
-| Kênh | Đặc điểm |
-|------|----------|
-| 💬 **Web ChatGPT** | Miễn phí, dùng session ChatGPT có sẵn |git
-| 🔗 **Server API** | OpenAI-compatible, siêu tốc |
-| 🖥️ **Local API** | Ollama/LM Studio, offline, riêng tư |
-
-### Data & Storage
-| Tính năng | Mô tả |
-|-----------|-------|
-| 💾 **Memory** | Lịch sử snap, search, thống kê |
-| 📁 **File Storage** | Auto-save PNG + text vào Downloads |
-| 📊 **Analytics** | Dashboard theo tuần/tháng/tất cả |
-| 📖 **Glossary** | Quản lý thuật ngữ, custom category, CSV import/export |
-| 🔄 **Cloud Sync** | Export/Import JSON settings & memory |
+**Snap Decode** hỗ trợ cơ chế vận hành **hoàn toàn tự động (Zero-Touch Native Messaging)**:
+1. **Tự động khởi động ngầm (Auto-Start):** Khi bạn bấm `Alt+X` hoặc click nút Snap, Chrome sẽ tự động khởi chạy backend xử lý ngầm (không hiện cửa sổ terminal đen, không tốn tài nguyên trước đó).
+2. **Tự động tắt hoàn toàn (Auto-Shutdown):** Ngay khi giải mã xong kết quả OCR hoặc QR code, tiến trình backend tự động ngắt và giải phóng 100% RAM cho máy tính.
+3. **QR Code Engine (ROI Localization):** Tự động phát hiện và định vị vùng chứa QR code ngay cả khi chụp toàn bộ màn hình lớn hoặc có nền phức tạp.
+4. **OCR Engine (RapidOCR ONNX):** Trích xuất chữ tiếng Việt và tiếng Anh chính xác tuyệt đối mà không phụ thuộc trình duyệt.
 
 ---
 
-## 📦 Cài đặt
+## 📦 Cài đặt & Kích hoạt
 
-### Yêu cầu
-- Chrome 88+ (Manifest V3)
-- Không cần server backend
+### Bước 1: Kích hoạt tự động khởi động backend (Chỉ làm 1 lần duy nhất)
+Nhấp đúp file:
+```
+setup_auto_backend.bat
+```
+*(Script sẽ tự động liên kết Extension với Backend thông qua Chrome Native Messaging).*
 
-### Các bước
+### Bước 2: Cài đặt Chrome Extension
+1. Mở trình duyệt Chrome, truy cập `chrome://extensions/`.
+2. Bật công tắc **Developer mode** ở góc trên bên phải.
+3. Nhấp **Load unpacked** và chọn thư mục `Snap-Translate-AI-main`.
+4. Bật tuỳ chọn *"Allow access to file URLs"* nếu bạn muốn snap trên các file PDF mở cục bộ.
 
-1. **Tải source**
-   ```bash
-   git clone https://github.com/thinh1234-cyber/Snap-Translate-AI.git
-   ```
-
-2. **Mở Chrome Extensions**
-   - Truy cập `chrome://extensions/`
-   - Bật **Developer mode** (góc phải)
-
-3. **Load extension**
-   - Nhấn **Load unpacked**
-   - Chọn thư mục project
-
-4. **Sử dụng**
-   - Click icon trên toolbar
-   - Hoặc nhấn `Alt+X`
-
-> 💡 Để snap trên file PDF local: Bật *"Allow access to file URLs"* trong chi tiết extension.
+> 💡 **Lưu ý:** Bạn **không cần** chạy `start_backend.bat` nữa! Mỗi khi snap, backend sẽ tự bật ngầm và tự tắt khi xong. (Nếu muốn chạy server HTTP thủ công như trước, bạn vẫn có thể nhấp `start_backend.bat`).
 
 ---
 
 ## 📖 Hướng dẫn sử dụng
 
-### Snap Dịch
-1. Mở extension → Click **Snap Dịch**
-2. Kéo chuột chọn vùng văn bản
-3. OCR tự động trích xuất chữ
-4. Click **💬 Dịch** để gửi ChatGPT
+### 1. Snap Trích Xuất Chữ (OCR)
+1. Bấm `Alt+X` hoặc click icon extension → chọn **Snap OCR**.
+2. Kéo chuột chọn bất kỳ vùng văn bản nào trên màn hình (con trỏ dấu `+` xuất hiện).
+3. Chữ sẽ được trích xuất tức thì. Bấm **Copy** hoặc **Export .txt**.
 
-### Snap QR
-1. Click **Snap Đọc QR**
-2. Chọn vùng chứa mã QR
-3. Kết quả hiển thị ngay
-
----
-
-## 🏗 Kiến trúc
-
-### Cấu trúc thư mục
-```
-├── js/
-│   ├── background.js          
-│   ├── content.js             
-│   ├── popup.js              
-│   ├── options.js             
-│   ├── chatgpt_automator.js   
-│   └── modules/
-│       ├── snap-controller.js     
-│       ├── translation-engine.js  
-│       ├── chatgpt-bridge.js      
-│       ├── ocr-manager.js         
-│       ├── memory-manager.js      
-│       └── file-saver.js          
-├── lib/
-│   ├── tesseract.min.js      
-│   ├── tesseract-core.wasm.js 
-│   ├── jsQR.js               
-│   └── lang-data/             
-├── html/                      
-├── css/                       
-└── manifest.json        
-```      
----
-
-## 🔧 Công nghệ
-
-| Layer | Technology |
-|-------|------------|
-| Extension | Manifest V3, Service Worker |
-| OCR | Tesseract.js 4.x (WASM, offline) |
-| QR | jsQR |
-| AI | ChatGPT Web, OpenAI API, Local LLM |
-| Storage | chrome.storage.sync + chrome.storage.local |
-| UI | Vanilla JS, CSS Variables, Dark Mode |
+### 2. Snap Đọc Mã QR
+1. Click icon extension → chọn **Snap Đọc QR**.
+2. Kéo chuột bao quanh mã QR (ảnh chụp có thể rộng hơn, hệ thống tự định vị chính xác).
+3. Nội dung mã QR hiển thị ngay lập tức.
 
 ---
 
@@ -141,8 +64,6 @@ Extension chụp bất kỳ vùng nào trên màn hình trình duyệt, trích x
 
 MIT — Xem [LICENSE](LICENSE)
 
----
-
 <div align="center">
-<p>Made with ❤️ by <b>Nguyễn Thịnh - Kyle</b></p>
+<p>Phát triển bởi <b>Kyle (Nguyễn Thịnh)</b></p>
 </div>

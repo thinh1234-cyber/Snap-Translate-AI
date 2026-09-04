@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Snap & Translate AI",
-  "version": "1.0.0",
-  "description": "Chụp vùng màn hình (snap) và tự động trích xuất, dịch văn bản chuyên ngành bằng AI.",
+  "name": "Snap Decode",
+  "version": "2.1.0",
+  "description": "Chụp vùng màn hình và tự động trích xuất văn bản (OCR) hoặc giải mã QR code tức thì.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnNoxxVHMtaXDh5slqswSXBUwHab0io04juKI/MQ0owdUwUGNgPU8JQE4QCM/siyOjr4BdKtv32PYmBI961arq440vXRWcS4BzYcMoB1xFu6y+O3Rw5EW9SYQS/oj2vL7bcS/82PRD8xOV2KUsj3wQ9Yej32UcOgye8oyqmxTlqXhYU5X1RfjURnovmlcXwbFn7JMLaNLi/Lw0IYqfZC1cGKobRxE4omAtRrsrm5VEdLNJcpGN63LdNYRdSZJEUCRDIr3PtflVl7eRre7SkvnhL4JN3liDcURtle7j9utBaytvM0hD0yY3hqBZe4bvqreQrp+u3P9rlqgZwoJBHnfZQIDAQAB",
   "icons": {
     "48": "assets/icon.png",
     "128": "assets/icon.png"
   },
   "action": {
-    "default_title": "Snap & Translate",
+    "default_title": "Snap Decode",
     "default_popup": "html/popup.html"
   },
   "background": {
@@ -22,28 +23,10 @@
     "commands",
     "tabs",
     "notifications",
-    "cookies",
-    "webNavigation",
-    "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess",
-    "downloads"
+    "nativeMessaging"
   ],
   "host_permissions": [
-    "*://chatgpt.com/*",
     "<all_urls>"
-  ],
-  "declarative_net_request": {
-    "rule_resources": [
-      { "id": "ruleset_chatgpt", "enabled": true, "path": "rules.json" }
-    ]
-  },
-  "content_scripts": [
-    {
-      "matches": ["*://chatgpt.com/*"],
-      "js": ["js/chatgpt_automator.js"],
-      "all_frames": true,
-      "run_at": "document_start"
-    }
   ],
   "commands": {
     "snap-region": {
@@ -51,20 +34,14 @@
         "default": "Alt+X",
         "mac": "Alt+X"
       },
-      "description": "Kích hoạt chức năng chụp một vùng màn hình"
+      "description": "Kích hoạt Snap OCR trích xuất chữ"
     }
   },
   "options_page": "html/options.html",
   "web_accessible_resources": [
     {
       "resources": [
-        "css/content.css",
-        "lib/tesseract.min.js",
-        "lib/jsQR.js",
-        "lib/worker.min.js",
-        "lib/tesseract-core.wasm.js",
-        "lib/lang-data/eng.traineddata.gz",
-        "lib/lang-data/vie.traineddata.gz"
+        "css/content.css"
       ],
       "matches": [
         "<all_urls>"

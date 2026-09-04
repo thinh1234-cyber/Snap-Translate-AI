@@ -2,18 +2,16 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Cài đặt Snap & Translate AI</title>
+  <title>Cài đặt Snap Decode</title>
   <link rel="stylesheet" href="../css/options.css">
 </head>
 <body>
   <div class="container">
     <div class="options-header">
-      <h1>⚙️ Cài đặt</h1>
+      <h1>⚙️ Cài đặt Snap Decode</h1>
       <div class="header-tabs">
         <button class="tab-btn active" data-tab="general">🔧 Chung</button>
         <button class="tab-btn" data-tab="memory">📝 Lịch sử</button>
-        <button class="tab-btn" data-tab="glossary">📖 Glossary</button>
-        <button class="tab-btn" data-tab="architecture">🏗 System</button>
       </div>
     </div>
 
@@ -31,74 +29,21 @@
         </div>
       </div>
 
-      <div class="card" id="specialty-card">
-        <div class="section-title">📚 Chuyên ngành dịch thuật</div>
-        <p class="description">Chọn hoặc nhập chuyên ngành để cấu hình ngữ cảnh dịch cho AI.</p>
-        <input type="text" id="specialty-input" placeholder="Ví dụ: Công nghệ thông tin (IT), Y tế, Blockchain...">
-      </div>
-
-      <div class="card" id="ai-channel-card">
-        <div class="section-title">🤖 Kênh Xử Lý AI</div>
-        <p class="description">Chọn luồng phân tích ngôn ngữ: Web ChatGPT, Server API, hoặc Local API.</p>
-
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom: 12px; font-weight: bold; cursor: pointer;">
-          <input type="checkbox" id="ocr-toggle" style="width: 18px; height: 18px; accent-color: #0f9d58;">
-          <span style="color:#0f9d58">Sử dụng Tesseract.js OCR Offline trước khi dịch</span>
-        </label>
-
-        <select id="channel-select">
-          <option value="web">Web ChatGPT (Miễn phí, chậm)</option>
-          <option value="api_server">Server API (Cần API Key, Siêu tốc)</option>
-          <option value="api_local">Local API (LM Studio/Ollama, OFFLINE)</option>
-        </select>
-
-        <div id="api-config" style="display: none;">
-          <div>
-            <label>Base URL</label>
-            <input type="text" id="api-url" placeholder="https://api.openai.com/v1/chat/completions">
-          </div>
-          <div>
-            <label>Tên Model</label>
-            <input type="text" id="api-model" placeholder="gpt-4o-mini hoặc llama3-8b">
-          </div>
-          <div>
-            <label>API Key</label>
-            <input type="password" id="api-key" placeholder="sk-...">
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">📝 Custom Autoprompt</div>
-        <p class="description">Thêm hướng dẫn tối ưu cho AI, ghép tự động vào lệnh mỗi khi chụp ảnh.</p>
-        <textarea id="autoprompt-input" rows="4" placeholder="Ví dụ: Dịch với văn phong tự nhiên, ưu tiên thuật ngữ tiếng Việt..."></textarea>
-      </div>
-
       <div class="card" id="shortcuts-card">
         <div class="section-title">⌨️ Phím tắt</div>
-        <p class="description">Xem và tùy chỉnh phím tắt cho Snap & Translate AI.</p>
+        <p class="description">Xem và tùy chỉnh phím tắt kích hoạt nhanh Snap Decode.</p>
         <div class="shortcuts-list">
           <div class="shortcut-item">
-            <span class="shortcut-label">Snap Dịch</span>
+            <span class="shortcut-label">Snap OCR (Tách chữ)</span>
             <span class="shortcut-key">Alt+X</span>
           </div>
         </div>
         <a href="#" id="open-shortcuts-link" class="link">🔗 Mở cài đặt phím tắt Chrome</a>
       </div>
 
-      <div class="card" id="web-auth-card">
-        <div class="section-title">🔐 Trạng thái ChatGPT Plus</div>
-        <p class="description">Kiểm tra kết nối với Web Session ChatGPT.</p>
-        <div class="auth-status" id="auth-status">
-          <span class="status-indicator loading"></span> Đang kiểm tra...
-        </div>
-        <button id="check-auth-btn" class="btn">Kiểm tra lại</button>
-        <a href="https://chatgpt.com" target="_blank" class="link">Mở ChatGPT để đăng nhập</a>
-      </div>
-
       <div class="card full-width" id="sync-card">
-        <div class="section-title">🔄 Cloud Sync & Backup</div>
-        <p class="description">Xuất hoặc nhập cài đặt và lịch sử dưới dạng JSON.</p>
+        <div class="section-title">🔄 Sao lưu & Phục hồi</div>
+        <p class="description">Xuất hoặc nhập cài đặt và lịch sử dưới dạng file JSON.</p>
         <div class="sync-actions">
           <div class="sync-group">
             <span class="sync-label">Cài đặt:</span>
@@ -126,7 +71,7 @@
     <div class="tab-content" id="tab-memory">
       <div class="card" id="analytics-card">
         <div class="section-title">📊 Analytics Dashboard</div>
-        <p class="description">Thống kê hoạt động snap và dịch thuật.</p>
+        <p class="description">Thống kê hoạt động trích xuất ký tự OCR và giải mã QR.</p>
         <div class="analytics-filters">
           <button class="analytics-filter active" data-range="week">Tuần này</button>
           <button class="analytics-filter" data-range="month">Tháng này</button>
@@ -138,132 +83,42 @@
             <div class="analytics-label">Tổng Snap</div>
           </div>
           <div class="analytics-stat">
-            <div class="analytics-value" id="analytics-translate">0</div>
-            <div class="analytics-label">🌍 Dịch</div>
+            <div class="analytics-value" id="analytics-ocr">0</div>
+            <div class="analytics-label">🔍 OCR Text</div>
           </div>
           <div class="analytics-stat">
             <div class="analytics-value" id="analytics-qr">0</div>
-            <div class="analytics-label">📷 QR</div>
+            <div class="analytics-label">📷 QR Code</div>
           </div>
           <div class="analytics-stat">
             <div class="analytics-value" id="analytics-chars">0</div>
-            <div class="analytics-label">Ký tự đã dịch</div>
+            <div class="analytics-label">Ký tự giải mã</div>
           </div>
         </div>
       </div>
 
       <div class="card" id="memory-card">
-        <div class="section-title">📝 Lịch sử Snap</div>
-        <p class="description">Xem lại các lần chụp và dịch trước đây.</p>
+        <div class="section-title">📝 Lịch sử Snap (<span id="memory-count">0</span>)</div>
+        <p class="description">Xem lại các lần trích xuất văn bản và mã QR gần đây.</p>
 
-        <div class="memory-controls">
+        <div class="memory-toolbar">
           <input type="text" id="memory-search" placeholder="🔍 Tìm kiếm trong lịch sử...">
           <button id="memory-clear-btn" class="btn btn-danger">🗑 Xóa tất cả</button>
         </div>
 
-        <div class="memory-stats" id="memory-stats">
-          <span class="stat">📊 Tổng: <b id="memory-count">0</b></span>
-          <span class="stat">🌍 Dịch: <b id="memory-translate-count">0</b></span>
-          <span class="stat">📷 QR: <b id="memory-qr-count">0</b></span>
-          <span class="stat">💾 Giới hạn: <b id="memory-limit-display">50</b></span>
+        <div class="memory-settings">
+          <label>Giới hạn lịch sử: <b id="memory-limit-display">50</b> mục</label>
+          <input type="number" id="memory-limit-input" min="10" max="500" value="50" style="width: 70px; margin-left: 8px;">
         </div>
 
-        <div id="memory-list">
-          <div class="memory-empty">📭 Đang tải lịch sử...</div>
-        </div>
-      </div>
-
-      <div class="card" id="memory-settings-card">
-        <div class="section-title">⚙️ Cài đặt Memory</div>
-        <p class="description">Điều chỉnh giới hạn số lượng entry lưu trữ để tránh làm nặng dung lượng.</p>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <label for="memory-limit-input" style="font-size:14px; font-weight:500;">Tối đa:</label>
-          <input type="number" id="memory-limit-input" min="10" max="500" step="10" style="width:100px;">
-          <span style="font-size:13px; color:var(--snap-options-desc, #5f6368);">entries (10-500)</span>
-        </div>
-        <div style="margin-top:8px; font-size:12px; color:var(--snap-options-desc, #5f6368);">
-          💡 Khi vượt quá giới hạn, các entry cũ nhất sẽ tự động bị xóa.
-        </div>
-      </div>
-
-      <div class="card" id="file-storage-card">
-        <div class="section-title">📁 File Storage (PNG + Text)</div>
-        <p class="description">Ảnh và text được lưu tự động vào thư mục Downloads/snap-translate/. Tự động xóa sau 30 ngày.</p>
-
-        <div class="memory-stats" id="file-stats">
-          <span class="stat">📊 Tổng files: <b id="file-count">0</b></span>
-          <span class="stat">🗑 Tự động xóa: <b>30 ngày</b></span>
-        </div>
-
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <button id="file-refresh-btn" class="btn">🔄 Refresh</button>
-          <button id="file-clear-btn" class="btn btn-danger">🗑 Xóa tất cả files</button>
-        </div>
-
-        <div id="file-list">
-          <div class="memory-empty">📭 Đang tải danh sách files...</div>
+        <div class="memory-list" id="memory-list">
+          <div class="memory-empty">Đang tải lịch sử...</div>
         </div>
       </div>
     </div>
 
-    <!-- GLOSSARY TAB -->
-    <div class="tab-content" id="tab-glossary">
-      <div class="card" id="glossary-card">
-        <div class="section-title">📖 Glossary & Terminology</div>
-        <p class="description">Quản lý thuật ngữ chuyên ngành. Auto-apply khi dịch.</p>
-
-        <div class="glossary-add">
-          <input type="text" id="glossary-source" placeholder="Thuật ngữ gốc (VD: API)">
-          <input type="text" id="glossary-target" placeholder="Bản dịch (VD: Giao diện lập trình)">
-          <input type="text" id="glossary-category" placeholder="Category (VD: IT)">
-          <button id="glossary-add-btn" class="btn btn-primary">+ Thêm</button>
-        </div>
-
-        <div class="glossary-controls">
-          <input type="text" id="glossary-search" placeholder="🔍 Tìm kiếm thuật ngữ...">
-          <button id="glossary-export-btn" class="btn">📤 Export CSV</button>
-          <button id="glossary-import-btn" class="btn">📥 Import CSV</button>
-          <button id="glossary-clear-btn" class="btn btn-danger">🗑 Xóa tất cả</button>
-        </div>
-        <input type="file" id="glossary-import-file" accept=".csv" style="display:none">
-
-        <div class="glossary-stats" id="glossary-stats">
-          <span class="stat">📊 Tổng: <b id="glossary-count">0</b></span>
-          <span class="stat">✅ Active: <b id="glossary-active">0</b></span>
-          <span class="stat">📁 Categories: <b id="glossary-categories">0</b></span>
-        </div>
-
-        <div id="glossary-list">
-          <div class="memory-empty">📭 Chưa có thuật ngữ nào.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SYSTEM ARCHITECTURE TAB -->
-    <div class="tab-content" id="tab-architecture">
-      <div class="card" id="arch-card">
-        <div class="section-title">🏗 System Architecture</div>
-        <p class="description">Xem sơ đồ tương tác minh họa luồng hoạt động nội bộ của Extension.</p>
-        <div id="arch-preview" class="arch-preview">
-          <div class="arch-node" data-node="popup">📱 Popup</div>
-          <div class="arch-node" data-node="content">🌐 Content Script</div>
-          <div class="arch-node" data-node="background">🔀 Background SW</div>
-          <div class="arch-node" data-node="memory">💾 Memory</div>
-          <div class="arch-node" data-node="ocr">🔍 OCR Engine</div>
-          <div class="arch-node" data-node="translate">🌍 Translation</div>
-          <div class="arch-node" data-node="chatgpt">🤖 ChatGPT</div>
-          <div class="arch-node" data-node="api">🔗 API/Local</div>
-        </div>
-        <div id="arch-info" class="arch-info">
-          <p>👆 Nhấn vào từng node để xem chi tiết luồng dữ liệu</p>
-        </div>
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button id="open-full-arch-btn" class="btn">🔍 Xem đầy đủ trong tab mới</button>
-          <button id="open-evolution-btn" class="btn">🗺️ Mở Evolution Roadmap</button>
-        </div>
-      </div>
-    </div>
   </div>
+
   <script src="../js/options.js"></script>
 </body>
 </html>

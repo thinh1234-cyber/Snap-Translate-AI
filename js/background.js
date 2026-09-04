@@ -1,32 +1,78 @@
 // ═══════════════════════════════════════════════════════════
-// BACKGROUND.JS — Message Router & Orchestrator
+// BACKGROUND.JS — Message Router & Orchestrator (Snap Decode)
+// Supports Native Messaging (Auto-start & Auto-shutdown) + HTTP Fallback
 // ═══════════════════════════════════════════════════════════
 
-import { registerCommandListener, startSnap } from './modules/snap-controller.js';
-import { handleTranslation } from './modules/translation-engine.js';
-import { openChatGPTWindow } from './modules/chatgpt-bridge.js';
-import { prepChatGPTCookies, sendPromptToIframe } from './modules/ocr-manager.js';
-import { saveSnap, getHistory, deleteSnap, clearHistory, searchHistory, setMaxEntries, getMaxEntriesSetting } from './modules/memory-manager.js';
-import { saveSnapFiles, autoDeleteOldFiles, deleteSavedFile, getSavedFilesList, clearSavedFiles } from './modules/file-saver.js';
+import { registerCommandListener } from './modules/snap-controller.js';
+import {
+  saveSnap,
+  getHistory,
+  deleteSnap,
+  clearHistory,
+  searchHistory,
+  setMaxEntries,
+  getMaxEntriesSetting
+} from './modules/memory-manager.js';
 
-// ── Auto-delete old files on startup ──────────────────────
-autoDeleteOldFiles().then(result => {
-  if (result.deleted > 0) {
-    console.log(`[SnapTranslate] Auto-deleted ${result.deleted} old files (>30 days). ${result.remaining} remaining.`);
-  }
-});
-
-// ── Register command listener ─────────────────────────────
+// ── Register command listener (Alt+X) ─────────────────────
 registerCommandListener();
+
+const NATIVE_HOST_NAME = "com.kyle.snap_decode";
+
+function fallbackToHttp(payload, sendResponse) {
+  fetch("http://127.0.0.1:8765/api/decode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => sendResponse(data))
+  .catch(() => {
+    sendResponse({
+      success: false,
+      error: "⚠️ Chưa kích hoạt Backend tự động.\n\n👉 Nhấp đúp file setup_auto_backend.bat (chỉ cần chạy 1 lần duy nhất) để Extension tự khởi động & tắt ngầm Backend khi snap!"
+    });
+  });
+}
 
 // ── Message Router ────────────────────────────────────────
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
-    case "CAPTURE_SCREEN":
-      chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
-        sendResponse({ dataUrl: dataUrl });
+    case "CAPTURE_SCREEN": {
+      const windowId = sender.tab ? sender.tab.windowId : null;
+      chrome.tabs.captureVisibleTab(windowId, { format: "png" }, (dataUrl) => {
+        if (chrome.runtime.lastError || !dataUrl) {
+          const errMsg = chrome.runtime.lastError?.message || "Không thể chụp màn hình tab hiện tại.";
+          console.error("[SnapDecode SW] Capture failed:", errMsg);
+          sendResponse({ dataUrl: null, error: errMsg });
+        } else {
+          sendResponse({ dataUrl: dataUrl });
+        }
       });
       return true;
+    }
+
+    case "DECODE_IMAGE": {
+      const payload = {
+        mode: request.mode,
+        image: request.image
+      };
+
+      // 1. Try Native Messaging first (Auto-start & Auto-shutdown managed by Chrome)
+      try {
+        chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, payload, (nativeResp) => {
+          if (!chrome.runtime.lastError && nativeResp) {
+            sendResponse(nativeResp);
+          } else {
+            // 2. Fallback to local HTTP backend if Native Host is not registered
+            fallbackToHttp(payload, sendResponse);
+          }
+        });
+      } catch (e) {
+        fallbackToHttp(payload, sendResponse);
+      }
+      return true;
+    }
 
     case "OPEN_OPTIONS":
       if (chrome.runtime.openOptionsPage) {
@@ -34,10 +80,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       } else {
         window.open(chrome.runtime.getURL('html/options.html'));
       }
-      return true;
-
-    case "TRANSLATE_IMAGE":
-      handleTranslation(request.dataUrl, request.ocrText, sendResponse);
       return true;
 
     case "SAVE_SNAP":
@@ -70,17 +112,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       return true;
 
-    case "CHATGPT_RESULT_RECEIVED":
-      saveSnap({
-        mode: "translate",
-        ocrText: request.ocrText || "",
-        translation: request.translation || "",
-        sourceUrl: ""
-      }).then(() => {
-        sendResponse({ success: true });
-      });
-      return true;
-
     case "SET_MEMORY_LIMIT":
       setMaxEntries(request.limit).then(newLimit => {
         sendResponse({ success: true, limit: newLimit });
@@ -91,43 +122,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       getMaxEntriesSetting().then(limit => {
         sendResponse(limit);
       });
-      return true;
-
-    case "SAVE_SNAP_FILES":
-      saveSnapFiles(request.dataUrl, request.textContent, request.mode).then(results => {
-        sendResponse(results);
-      });
-      return true;
-
-    case "GET_SAVED_FILES":
-      getSavedFilesList().then(files => {
-        sendResponse(files);
-      });
-      return true;
-
-    case "DELETE_SAVED_FILE":
-      deleteSavedFile(request.id).then(files => {
-        sendResponse({ success: true, count: files.length });
-      });
-      return true;
-
-    case "CLEAR_SAVED_FILES":
-      clearSavedFiles().then(() => {
-        sendResponse({ success: true });
-      });
-      return true;
-
-    case "OPEN_CHATGPT_TRANSLATE":
-    case "OPEN_CHATGPT_WINDOW":
-      openChatGPTWindow(request.ocrText, request.dataUrl, request.winLeft, request.winTop, sendResponse);
-      return true;
-
-    case "SEND_CHATGPT_PROMPT":
-      sendPromptToIframe(request.ocrText, request.dataUrl, sender.tab.id, sendResponse);
-      return true;
-
-    case "PREP_CHATGPT_IFRAME":
-      prepChatGPTCookies(sendResponse);
       return true;
 
     default:

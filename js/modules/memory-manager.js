@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// MEMORY-MANAGER.JS — Quản lý lịch sử Snap
+// MEMORY-MANAGER.JS — Quản lý lịch sử Snap Decode
 // ═══════════════════════════════════════════════════════════
 
 const MEMORY_KEY = "snap_history";
@@ -14,12 +14,16 @@ export async function saveSnap(entry) {
   const history = await getHistory();
   const maxEntries = await getMaxEntries();
 
+  const contentText = entry.text || entry.ocrText || entry.translation || "";
+  const mode = entry.mode === "qr" ? "qr" : "ocr";
+
   history.unshift({
     id: Date.now().toString(),
     timestamp: new Date().toISOString(),
-    mode: entry.mode || "translate",
-    ocrText: entry.ocrText || "",
-    translation: entry.translation || "",
+    mode: mode,
+    text: contentText,
+    ocrText: contentText, // Backward compatibility
+    translation: mode === "qr" ? contentText : "", // Backward compatibility
     sourceUrl: entry.sourceUrl || "",
     confidence: entry.confidence || 0
   });
@@ -51,13 +55,13 @@ export async function clearHistory() {
 
 export async function searchHistory(query) {
   const history = await getHistory();
-  if (!query.trim()) return history;
+  if (!query || !query.trim()) return history;
 
   const lowerQuery = query.toLowerCase();
-  return history.filter(entry =>
-    (entry.ocrText && entry.ocrText.toLowerCase().includes(lowerQuery)) ||
-    (entry.translation && entry.translation.toLowerCase().includes(lowerQuery))
-  );
+  return history.filter(entry => {
+    const textToSearch = (entry.text || entry.ocrText || entry.translation || "").toLowerCase();
+    return textToSearch.includes(lowerQuery);
+  });
 }
 
 export async function setMaxEntries(limit) {
