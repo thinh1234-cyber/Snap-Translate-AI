@@ -4,12 +4,14 @@
 // 1. Chuyển sang clean embed URL: https://www.scribd.com/embeds/{id}/content
 // 2. Main World Bridge: Hook trực tiếp vào DocumentManager & Page Prototype:
 //    - Chặn hoàn toàn p.hide() và p.remove()
+//    - Hook _setContainerContents để dọn dẹp DOM cũ, chống trùng lặp nhiều .newpage trong 1 trang
 //    - Hook _renderLoadedPage để tự động nạp 100% ảnh absimg (HTTPS + token chuẩn)
-//    - Hỗ trợ loadPageRange từng trang an toàn, không gọi lại trang đã load tránh nghẽn socket/CDN ở trang >35
-// 3. A4 AutoFit Engine chuẩn xác:
-//    - Triệt tiêu inline style transform: scale(...) của Scribd (loại bỏ lỗi double-scaling co nhỏ 35%)
-//    - contain: none trên .outer_page loại bỏ lỗi cắt xén in ấn của Chromium
-//    - margin: 0 auto cân đối hoàn hảo lề trái/phải, vừa khít 98.5% trang giấy A4
+//    - Hỗ trợ loadPageRange từng trang an toàn, không gọi lại trang đã load
+// 3. A4 Exact-Fit Engine (Không dùng CSS zoom chống vỡ layout & chống tràn trang):
+//    - Tính toán tỷ lệ pageScale chính xác theo khổ A4 (791 x 1119 px)
+//    - .outer_page có kích thước đúng bằng A4, overflow: hidden và break-after: page
+//    - .newpage áp dụng transform: scale(pageScale) với transform-origin: top left
+//    - Triệt tiêu hoàn toàn lỗi Chromium cắt xén / tràn trang làm chữ trang trước đè lên trang sau
 // 4. Gán class snap-last-page triệt tiêu hoàn toàn trang trắng thừa ở cuối
 // ═══════════════════════════════════════════════════════════
 
@@ -106,13 +108,16 @@
           function hookDocManager() {
             if (!window.docManager) return;
 
-            // 1. Chặn _updateDisplayOnPages & _removeUnusedPages trên ViewManager
+            // 1. Chặn _updateDisplayOnPages & _removeUnusedPages trên ViewManager và docManager
             if (window.docManager._currentViewManager) {
               window.docManager._currentViewManager._updateDisplayOnPages = function() {};
               window.docManager._currentViewManager._removeUnusedPages = function() {};
             }
+            if (typeof window.docManager._removeUnusedPages === "function") {
+              window.docManager._removeUnusedPages = function() {};
+            }
 
-            // 2. Chặn p.hide() và p.remove() trên từng trang
+            // 2. Chặn p.hide() và p.remove() trên từng trang & chống trùng lặp DOM
             if (window.docManager.pages) {
               const samplePage = Object.values(window.docManager.pages)[0];
               if (samplePage && samplePage.constructor && samplePage.constructor.prototype) {
@@ -121,6 +126,21 @@
                 // Vô hiệu hóa xóa DOM
                 proto.remove = function() {};
                 proto.hide = function() {};
+
+                // Hook _setContainerContents để dọn sạch child cũ trước khi append, chống đè text
+                if (!proto.__snapSetHooked) {
+                  proto.__snapSetHooked = true;
+                  const origSet = proto._setContainerContents;
+                  proto._setContainerContents = function(e) {
+                    if (this.containerElem) {
+                      const oldNewpages = this.containerElem.querySelectorAll(".newpage");
+                      for (let k = 0; k < oldNewpages.length; k++) {
+                        oldNewpages[k].remove();
+                      }
+                    }
+                    origSet.call(this, e);
+                  };
+                }
 
                 // Hook _renderLoadedPage để tự động nạp toàn bộ ảnh ngay khi JSONP render
                 if (!proto.__snapHooked) {
@@ -232,10 +252,8 @@
       (document.head || document.documentElement).appendChild(script);
     },
 
-    // ── Engine tính toán tỷ lệ A4 AutoFit đối xứng chuẩn xác ──
+    // ── Engine tính toán tỷ lệ A4 chuẩn xác (Không dùng CSS zoom) ──
     setupAutoFitPrintEngine() {
-      // Đọc kích thước gốc thực sự của tài liệu từ .newpage hoặc docManager
-      // Tránh đọc nhầm width bị Scribd co nhỏ khi hiển thị trên màn hình
       let origW = 901;
       let origH = 1275;
 
@@ -258,11 +276,16 @@
       const paperW = isLandscape ? 1122.5 : 793.7;
       const paperH = isLandscape ? 793.7 : 1122.5;
 
-      // Tỷ lệ co giãn để vừa khít 98.5% khổ A4 (căn đều lề trên/dưới/trái/phải)
-      const scaleX = paperW / origW;
-      const scaleY = paperH / origH;
-      let printScale = Math.min(scaleX, scaleY) * 0.985;
-      printScale = Math.round(printScale * 1000) / 1000;
+      // Tính tỷ lệ scale chính xác để vừa khít 100% trang A4 mà không vượt quá 1px nào
+      // Trừ 2px khoảng đệm an toàn tuyệt đối chống hiện tượng tràn trang (overflow page split)
+      const scaleX = (paperW - 2) / origW;
+      const scaleY = (paperH - 2) / origH;
+      let pageScale = Math.min(scaleX, scaleY);
+      pageScale = Math.round(pageScale * 10000) / 10000;
+
+      // Kích thước chuẩn xác của từng khung trang in (luôn <= kích thước A4)
+      const targetW = Math.floor(origW * pageScale);
+      const targetH = Math.floor(origH * pageScale);
 
       // Cập nhật Stylesheet in ấn AutoFit
       const prevPrintStyle = document.getElementById("snap-scribd-print-scale");
@@ -280,7 +303,6 @@
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            height: auto !important;
             background: #fff !important;
             overflow: visible !important;
           }
@@ -299,9 +321,10 @@
             height: auto !important;
             overflow: visible !important;
             display: block !important;
+            zoom: 1 !important;
           }
           .document_container {
-            zoom: ${printScale} !important;
+            zoom: 1 !important;
           }
           .not_visible, .blurred_page, .placeholder {
             display: block !important;
@@ -328,10 +351,11 @@
             visibility: visible !important;
             opacity: 1 !important;
             contain: none !important;
+            overflow: hidden !important;
             margin: 0 auto !important;
             padding: 0 !important;
-            width: ${origW}px !important;
-            height: ${origH}px !important;
+            width: ${targetW}px !important;
+            height: ${targetH}px !important;
             box-shadow: none !important;
             border: none !important;
             box-sizing: border-box !important;
@@ -346,7 +370,7 @@
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            transform: none !important;
+            transform: scale(${pageScale}) !important;
             transform-origin: top left !important;
             width: ${origW}px !important;
             height: ${origH}px !important;
@@ -367,6 +391,9 @@
         }
       `;
       document.head.appendChild(printStyle);
+      this.pageScale = pageScale;
+      this.targetW = targetW;
+      this.targetH = targetH;
     },
 
     // ── Pipeline quét nạp theo từng nhóm trang (Chunked Batch Pipeline) ──
@@ -426,7 +453,6 @@
             inner.style.setProperty("display", "block", "important");
             inner.style.setProperty("visibility", "visible", "important");
             inner.style.setProperty("opacity", "1", "important");
-            inner.style.setProperty("transform", "none", "important");
           }
 
           // Ép nạp toàn bộ ảnh .absimg trên trang với domain HTTPS hợp lệ
@@ -439,7 +465,7 @@
             if (orig && (!img.src || img.src === window.location.href || img.src.startsWith("data:"))) {
               let u = orig;
               if (u.startsWith("http://html.scribd.com/")) {
-                u = u.replace("http://html.scribd.com/", "https://html.scribdassets.com/");
+                u = u.replace("http://html.scribdassets.com/", "https://html.scribdassets.com/");
               }
               img.src = u;
             }
@@ -471,7 +497,7 @@
       await new Promise(resolve => setTimeout(resolve, 400));
     },
 
-    // ── Xóa các element rác & bung toàn bộ các trang 100% ────────
+    // ── Xóa các element rác & dọn dẹp triệt để trùng lặp DOM ────────
     cleanupDOM() {
       // 1. Gửi tín hiệu Main World ép nạp toàn bộ ảnh và bảo lưu các trang
       window.dispatchEvent(new CustomEvent("SNAP_SCRIBD_LOAD_ALL"));
@@ -490,13 +516,21 @@
       document.querySelectorAll(".mobile_overlay").forEach(el => el.remove());
       document.querySelectorAll("#between_page_ads, .between_page_ads, .brand_header, .sticky_header, header, footer, .global_header, .bottom_actions, .related_docs, .document_cell, .ad_unit, .banner").forEach(el => el.remove());
 
-      // 4. Đảm bảo 100% outer_page VÀ inner_page đều display: block
+      // 4. Đảm bảo mỗi outer_page chỉ có đúng 1 .newpage duy nhất (chống trùng lặp text đè nhau)
       const allOuterPages = Array.from(document.querySelectorAll(".outer_page"));
       allOuterPages.forEach((el, idx) => {
         el.classList.remove("not_visible", "blurred_page", "placeholder");
         el.style.setProperty("display", "block", "important");
         el.style.setProperty("visibility", "visible", "important");
         el.style.setProperty("opacity", "1", "important");
+
+        // Loại bỏ các thẻ .newpage dư thừa nếu trang bị render trùng
+        const newpages = el.querySelectorAll(".newpage");
+        if (newpages.length > 1) {
+          for (let k = 0; k < newpages.length - 1; k++) {
+            newpages[k].remove();
+          }
+        }
 
         if (idx === allOuterPages.length - 1) {
           el.classList.add("snap-last-page");
@@ -507,7 +541,6 @@
         el.style.setProperty("display", "block", "important");
         el.style.setProperty("visibility", "visible", "important");
         el.style.setProperty("opacity", "1", "important");
-        el.style.setProperty("transform", "none", "important");
       });
 
       // 5. Nạp toàn diện ảnh lần chót trên toàn bộ document
