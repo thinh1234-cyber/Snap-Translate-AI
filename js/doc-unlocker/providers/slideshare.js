@@ -2,8 +2,8 @@
 // PROVIDERS/SLIDESHARE.JS — SlideShare Downloader & PDF Engine
 // Tự động thu thập toàn bộ slide độ nét cao (HD 2048px/1024px),
 // cơ chế 3 tầng: Next.js Store -> slidesharedownloader.top API -> DOM Fallback,
-// chống nhầm slide gợi ý, tự động chuyển độ phân giải an toàn (fallback ladder),
-// căn chỉnh chuẩn khổ giấy A4 Ngang/Dọc cho in ấn & lưu PDF sắc nét 100%.
+// cơ chế tải tuần tự song song (concurrency pool) chống nghẽn mạng đối với tài liệu lớn (>80-150 trang),
+// chống trang trắng / mất trang, căn chuẩn khổ giấy A4 Ngang/Dọc 100vw x 100vh không bao giờ thừa trang trắng.
 // ═══════════════════════════════════════════════════════════
 
 (() => {
@@ -229,7 +229,7 @@
       let result = this.extractFromNextData();
       if (result) {
         console.log("[SnapDoc] Thu thập thành công qua Next.js Store:", result);
-        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide độ nét cao!`);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 40, `Tìm thấy ${result.totalSlides} slide độ nét cao!`);
         return result;
       }
 
@@ -238,7 +238,7 @@
       result = await this.extractFromApiFallback();
       if (result) {
         console.log("[SnapDoc] Thu thập thành công qua API Fallback:", result);
-        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide qua API!`);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 40, `Tìm thấy ${result.totalSlides} slide qua API!`);
         return result;
       }
 
@@ -247,7 +247,7 @@
       result = this.extractFromDOMFallback();
       if (result) {
         console.log("[SnapDoc] Thu thập thành công qua DOM Pattern:", result);
-        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide qua DOM!`);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 40, `Tìm thấy ${result.totalSlides} slide qua DOM!`);
         return result;
       }
 
@@ -275,16 +275,6 @@
 
       const isLandscape = origW >= origH;
 
-      // Tiêu chuẩn in ấn A4 (pixels 96 DPI):
-      // Landscape: 1122.5 x 793.7 | Portrait: 793.7 x 1122.5
-      const printW = isLandscape ? 1122.5 : 793.7;
-      const printH = isLandscape ? 793.7 : 1122.5;
-
-      const scaleX = printW / origW;
-      const scaleY = printH / origH;
-      let printScale = Math.min(scaleX, scaleY) * 0.99;
-      printScale = Math.round(printScale * 10000) / 10000;
-
       // Tính kích thước hiển thị vừa vặn trên màn hình máy tính (Preview UI)
       const maxScreenW = Math.min(window.innerWidth * 0.9, isLandscape ? 1040 : 760);
       const previewScale = Math.min(1, maxScreenW / origW);
@@ -299,7 +289,12 @@
         pf.style.setProperty("aspect-ratio", `${origW} / ${origH}`, "important");
       });
 
-      // Cập nhật stylesheet in ấn động
+      // Đảm bảo phần tử cuối có class snap-last-slide
+      if (allPfs.length > 0) {
+        allPfs[allPfs.length - 1].classList.add("snap-last-slide");
+      }
+
+      // Cập nhật stylesheet in ấn động: Dùng 100vw x 100vh để không bao giờ có trang trắng thừa
       const prevDynamic = document.getElementById("snap-slideshare-autoscale-style");
       if (prevDynamic) prevDynamic.remove();
 
@@ -309,30 +304,62 @@
         @media print {
           @page {
             size: ${isLandscape ? "landscape" : "portrait"};
-            margin: 0mm;
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            overflow: visible !important;
+          }
+          #snap-slideshare-modal {
+            position: static !important;
+            width: 100% !important;
+            height: auto !important;
+            background: #fff !important;
+            overflow: visible !important;
+          }
+          #snap-slideshare-modal .snap-modal-bar,
+          #snap-slideshare-modal .snap-modal-loading {
+            display: none !important;
+          }
+          #snap-slideshare-modal .snap-modal-pages {
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 0 !important;
+            display: block !important;
           }
           #snap-slideshare-modal .snap-modal-pages .pf {
-            width: ${printW}px !important;
-            height: ${printH}px !important;
-            max-width: none !important;
-            max-height: none !important;
-            aspect-ratio: ${origW} / ${origH} !important;
-            margin: 0 auto !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             page-break-after: always !important;
             break-after: page !important;
             display: flex !important;
-            visibility: visible !important;
+            align-items: center !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+            background: #fff !important;
           }
+          #snap-slideshare-modal .snap-modal-pages .pf.snap-last-slide,
           #snap-slideshare-modal .snap-modal-pages .pf:last-child {
             page-break-after: auto !important;
             break-after: auto !important;
           }
           #snap-slideshare-modal .snap-modal-pages .pf img {
-            width: 100% !important;
-            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: auto !important;
+            height: auto !important;
             object-fit: contain !important;
             display: block !important;
           }
@@ -342,9 +369,8 @@
 
       // Cập nhật nhãn nút in
       if (modalUI && modalUI.printBtn) {
-        const pct = Math.round(printScale * 100);
         const oriLabel = isLandscape ? "Khổ Ngang" : "Khổ Dọc";
-        modalUI.printBtn.textContent = `🖨️ In / Lưu PDF (${oriLabel} • Fit ${pct}%)`;
+        modalUI.printBtn.textContent = `🖨️ In / Lưu PDF (${oriLabel} • ${allPfs.length} slides)`;
         modalUI.printBtn.disabled = false;
         modalUI.printBtn.style.opacity = "1";
         modalUI.printBtn.classList.add("ready");
@@ -631,21 +657,6 @@
           body > *:not(#snap-slideshare-modal) {
             display: none !important;
           }
-          #snap-slideshare-modal {
-            position: static !important;
-            width: 100% !important;
-            height: auto !important;
-            background: #fff !important;
-            overflow: visible !important;
-          }
-          #snap-slideshare-modal .snap-modal-bar,
-          #snap-slideshare-modal .snap-modal-loading {
-            display: none !important;
-          }
-          #snap-slideshare-modal .snap-modal-pages {
-            padding: 0 !important;
-            gap: 0 !important;
-          }
         }
       `;
       document.head.appendChild(style);
@@ -676,40 +687,9 @@
       modalUI.modal.querySelector(".snap-modal-title").setAttribute("title", cleanTitle);
       if (modalUI.pageBadge) modalUI.pageBadge.textContent = `0/${total} slides`;
 
-      // Căn chỉnh tỷ lệ sơ bộ dựa trên dimensions nếu có
-      if (presentationData.dimensions) {
-        this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
-      }
-
-      // Bước 2: Tạo các khung chứa .pf và thẻ img có hỗ trợ Fallback Ladder
-      let loadedCount = 0;
-      let completedCount = 0;
-
-      const onSlideLoaded = (isSuccess) => {
-        completedCount++;
-        if (isSuccess) loadedCount++;
-
-        const pct = 45 + Math.round((completedCount / total) * 55);
-        modalUI.fill.style.width = `${pct}%`;
-        modalUI.sub.textContent = `Đang nạp ảnh slide (${completedCount} / ${total})...`;
-        if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${completedCount}/${total} slides`;
-        if (UI) UI.updateProgress(`Nạp slide ${completedCount} / ${total}`, pct);
-
-        if (completedCount === 1) {
-          this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
-        }
-
-        if (completedCount >= total) {
-          modalUI.sub.textContent = `✅ Đã sẵn sàng in ${total} slide!`;
-          modalUI.loading.style.display = "none";
-          this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
-
-          // Tự động mở hộp thoại in sau nhịp nghỉ ngắn
-          setTimeout(() => {
-            if (modalUI.printBtn) modalUI.printBtn.click();
-          }, 600);
-        }
-      };
+      // Bước 2: Tạo các khung .pf trước
+      const pfElements = [];
+      const queue = [];
 
       presentationData.slideCandidates.forEach((candidates, idx) => {
         const pf = document.createElement("div");
@@ -720,47 +700,101 @@
         img.alt = `Slide ${idx + 1}`;
         img.setAttribute("loading", "eager");
 
-        // Lưu danh sách candidates và chỉ số hiện tại
-        img.__candidates = candidates;
-        img.__candidateIdx = 0;
-        let isSettled = false;
-
-        const settleOnce = (success) => {
-          if (isSettled) return;
-          isSettled = true;
-          onSlideLoaded(success);
-        };
-
-        // Fallback ladder: Thử độ phân giải 2048px trước, nếu 404 thì tự động xuống 1024px, 638px...
-        img.addEventListener("error", function handleImgError() {
-          this.__candidateIdx++;
-          if (this.__candidateIdx < this.__candidates.length) {
-            this.src = this.__candidates[this.__candidateIdx];
-          } else {
-            console.warn(`[SnapDoc] Slide ${idx + 1} không thể tải từ bất kỳ URL nào:`, this.__candidates);
-            settleOnce(false);
-          }
-        });
-
-        img.addEventListener("load", function handleImgLoad() {
-          if (this.naturalWidth > 0) {
-            settleOnce(true);
-          }
-        });
-
-        // Set URL đầu tiên (độ phân giải cao nhất)
-        img.src = candidates[0];
-
-        // Liveness timeout 15s cho từng slide để không bao giờ bị treo vĩnh viễn
-        setTimeout(() => {
-          if (!isSettled) {
-            settleOnce(img.naturalWidth > 0);
-          }
-        }, 15000);
-
         pf.appendChild(img);
         modalUI.pages.appendChild(pf);
+
+        pfElements.push(pf);
+        queue.push({ img, candidates, idx });
       });
+
+      if (pfElements.length > 0) {
+        pfElements[pfElements.length - 1].classList.add("snap-last-slide");
+      }
+
+      // Căn chỉnh tỷ lệ sơ bộ dựa trên dimensions nếu có
+      this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
+
+      // Bước 3: Tải ảnh theo luồng song song có kiểm soát (Concurrency = 8)
+      // Giúp trình duyệt không bị nghẽn mạng hay rớt kết nối với tài liệu lớn (>80 trang)
+      const CONCURRENCY = 8;
+      let completedCount = 0;
+      let successCount = 0;
+
+      const loadSlide = (item) => {
+        const { img, candidates, idx } = item;
+        return new Promise((resolve) => {
+          let candidateIdx = 0;
+          let isSettled = false;
+          let timer = null;
+
+          const settle = (ok) => {
+            if (isSettled) return;
+            isSettled = true;
+            if (timer) clearTimeout(timer);
+            completedCount++;
+            if (ok) successCount++;
+
+            const pct = 40 + Math.round((completedCount / total) * 60);
+            modalUI.fill.style.width = `${pct}%`;
+            modalUI.sub.textContent = `Đang nạp ảnh slide (${completedCount} / ${total})...`;
+            if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${completedCount}/${total} slides`;
+            if (UI) UI.updateProgress(`Nạp slide ${completedCount} / ${total}`, pct);
+
+            if (completedCount === 1) {
+              this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
+            }
+            resolve(ok);
+          };
+
+          const tryCandidate = () => {
+            if (isSettled) return;
+            if (candidateIdx < candidates.length) {
+              const url = candidates[candidateIdx++];
+              img.onerror = () => tryCandidate();
+              img.onload = () => {
+                if (img.naturalWidth > 0) {
+                  settle(true);
+                } else {
+                  tryCandidate();
+                }
+              };
+              img.src = url;
+
+              // Hạn chế chờ tối đa 12s cho mỗi URL ứng cử viên
+              if (timer) clearTimeout(timer);
+              timer = setTimeout(() => {
+                console.warn(`[SnapDoc] Slide ${idx + 1} quá hạn tải URL, thử độ phân giải khác:`, url);
+                tryCandidate();
+              }, 12000);
+            } else {
+              console.warn(`[SnapDoc] Slide ${idx + 1} đã thử hết các URL khả dụng.`);
+              settle(false);
+            }
+          };
+
+          tryCandidate();
+        });
+      };
+
+      let qIdx = 0;
+      const workers = Array(CONCURRENCY).fill(null).map(async () => {
+        while (qIdx < queue.length) {
+          const item = queue[qIdx++];
+          await loadSlide(item);
+        }
+      });
+
+      await Promise.all(workers);
+
+      // Đã nạp xong 100% toàn bộ các slide
+      modalUI.sub.textContent = `✅ Đã sẵn sàng in ${total} slide!`;
+      modalUI.loading.style.display = "none";
+      this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
+
+      // Tự động mở hộp thoại in sau nhịp nghỉ ngắn
+      setTimeout(() => {
+        if (modalUI.printBtn) modalUI.printBtn.click();
+      }, 600);
     }
   };
 })();
