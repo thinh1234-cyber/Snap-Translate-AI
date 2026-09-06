@@ -4,7 +4,7 @@
 
 # Snap Decode
 
-> Chrome Extension: Giải mã QR Code thông minh & Mở khóa tải tài liệu (Scribd, StuDocu)
+> Chrome Extension: Giải mã QR Code thông minh & Mở khóa tải tài liệu (Scribd, StuDocu, SlideShare)
 
 [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,10 +24,11 @@
    - **Định vị vùng chứa QR (ROI Localization):** Tự động phát hiện và căn góc mã QR ngay cả khi chụp toàn bộ màn hình lớn hoặc nền phức tạp.
    - **Tốc độ cực nhanh:** Thời gian giải mã chỉ **~30ms**.
 
-2. **DocUnlocker — Mở khóa & Tải tài liệu Scribd, StuDocu (100% Client-side):**
-   - **Scribd Downloader:** Tự động chuyển sang chế độ Embed sạch, cuộn nạp tất cả các trang và xuất ra file PDF nguyên bản vector/text sắc nét.
+2. **DocUnlocker — Mở khóa & Tải tài liệu Scribd, StuDocu, SlideShare (100% Client-side):**
+   - **Scribd Downloader:** Tự động chuyển sang chế độ Embed sạch, cuộn nạp kỹ lưỡng tất cả các trang và xuất ra file PDF nguyên bản vector/text sắc nét.
    - **StuDocu Downloader & Unblur:** Gỡ bỏ hoàn toàn lớp làm mờ CSS (`filter: blur`), xóa banner paywall, mở khóa bôi đen và in PDF trọn vẹn không giới hạn trang.
-   - **Nút nổi thông minh (Floating Button):** Tự động xuất hiện nút `⚡ Tải PDF Sạch` ngay góc màn hình khi bạn duyệt Scribd hoặc StuDocu.
+   - **SlideShare Downloader:** Tự động quét và nâng cấp toàn bộ slide lên độ phân giải cao nhất 2048px (`-2048.jpg`), tự động căn chỉnh khổ giấy A4 Ngang (Landscape) chuẩn chỉnh.
+   - **Nút nổi thông minh (Floating Button):** Tự động xuất hiện nút `⚡ Tải PDF Sạch` ngay góc màn hình khi bạn duyệt Scribd, StuDocu hoặc SlideShare.
 
 ---
 

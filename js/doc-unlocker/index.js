@@ -6,7 +6,8 @@
 (() => {
   const providers = [
     window.__SnapDocScribd,
-    window.__SnapDocStudocu
+    window.__SnapDocStudocu,
+    window.__SnapDocSlideShare
   ].filter(Boolean);
 
   window.__SnapDocRouter = {
@@ -20,7 +21,7 @@
       if (provider) {
         provider.execute(window.__SnapDocUI);
       } else {
-        alert("Trang hiện tại không thuộc danh sách hỗ trợ (Scribd, StuDocu)!");
+        alert("Trang hiện tại không thuộc danh sách hỗ trợ (Scribd, StuDocu, SlideShare)!");
       }
     },
 

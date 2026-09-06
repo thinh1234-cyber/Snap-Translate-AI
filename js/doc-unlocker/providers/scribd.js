@@ -36,7 +36,7 @@
           this.injectPrintStyles();
           UI.hideProgress();
           window.print();
-        }, 850);
+        }, 1600);
       });
     },
 
@@ -104,20 +104,27 @@
               scroller.scrollTop = el.offsetTop;
               scroller.dispatchEvent(new Event("scroll"));
             }
+            // Micro-scroll after 400ms to kick any stubborn IntersectionObservers
+            setTimeout(() => {
+              if (scroller && typeof scroller.scrollTop === "number") {
+                scroller.scrollTop = el.offsetTop + 10;
+                scroller.dispatchEvent(new Event("scroll"));
+              }
+            }, 400);
           }
 
           idx++;
-          const pct = Math.round((idx / total) * 65);
+          const pct = Math.round((idx / total) * 60);
           if (onProgress) onProgress(`Đang quét nạp trang ${idx} / ${total}...`, pct);
 
-          // Paced at 600ms per page so DOM & network hydration keeps up
-          setTimeout(scrollNext, 600);
+          // Paced at 1400ms per page so DOM, JSONP & image hydration keeps up thoroughly
+          setTimeout(scrollNext, 1400);
         };
 
         // 3. Verification loop: ensures the last page and all images finish loading
         const verifyContentRendered = () => {
           let checks = 0;
-          const maxChecks = 40; // max ~10 seconds for thorough network completion
+          const maxChecks = 60; // max ~24 seconds headroom for slower networks
 
           const checkInterval = setInterval(() => {
             checks++;
@@ -138,7 +145,7 @@
             // Check if any images are still downloading or haven't decoded
             const pendingImages = Array.from(document.querySelectorAll(".outer_page img")).filter(img => !img.complete || img.naturalWidth === 0);
 
-            const pct = 65 + Math.min(34, Math.round(checks * 0.9));
+            const pct = 60 + Math.min(39, Math.round(checks * 0.7));
             if (onProgress) {
               onProgress(`Đang đợi nạp nội dung & ảnh (${total - pendingPages.length}/${total} trang)...`, pct);
             }
@@ -149,7 +156,7 @@
               if (scroller && typeof scroller.scrollTop === "number") scroller.scrollTop = 0;
               resolve();
             }
-          }, 250);
+          }, 400);
         };
 
         scrollNext();

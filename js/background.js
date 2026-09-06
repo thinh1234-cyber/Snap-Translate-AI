@@ -94,14 +94,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
           });
         }
-      } else if (url.includes("studocu.com") || url.includes("studocu.vn")) {
+      } else if (url.includes("studocu.com") || url.includes("studocu.vn") || url.includes("slideshare.net")) {
         chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_DOC_DOWNLOAD" }, () => {
           sendResponse({ success: true });
         });
       } else {
         sendResponse({
           success: false,
-          error: "Trang hiện tại không phải Scribd hoặc StuDocu!\nHãy mở trang tài liệu cần tải trước."
+          error: "Trang hiện tại không phải Scribd, StuDocu hoặc SlideShare!\nHãy mở trang tài liệu cần tải trước."
         });
       }
       return true;

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Snap Decode",
   "version": "2.1.0",
-  "description": "Giải mã QR Code, VietQR thông minh và Mở khóa tải tài liệu Scribd, Studocu.",
+  "description": "Giải mã QR Code, VietQR thông minh và Mở khóa tải tài liệu Scribd, Studocu, SlideShare.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnNoxxVHMtaXDh5slqswSXBUwHab0io04juKI/MQ0owdUwUGNgPU8JQE4QCM/siyOjr4BdKtv32PYmBI961arq440vXRWcS4BzYcMoB1xFu6y+O3Rw5EW9SYQS/oj2vL7bcS/82PRD8xOV2KUsj3wQ9Yej32UcOgye8oyqmxTlqXhYU5X1RfjURnovmlcXwbFn7JMLaNLi/Lw0IYqfZC1cGKobRxE4omAtRrsrm5VEdLNJcpGN63LdNYRdSZJEUCRDIr3PtflVl7eRre7SkvnhL4JN3liDcURtle7j9utBaytvM0hD0yY3hqBZe4bvqreQrp+u3P9rlqgZwoJBHnfZQIDAQAB",
   "icons": {
     "48": "assets/icon.png",
@@ -43,12 +43,14 @@
         "*://*.scribd.com/*",
         "*://*.studocu.com/*",
         "*://*.studocu.vn/*",
-        "*://studocu.vn/*"
+        "*://studocu.vn/*",
+        "*://*.slideshare.net/*"
       ],
       "js": [
         "js/doc-unlocker/ui-overlay.js",
         "js/doc-unlocker/providers/scribd.js",
         "js/doc-unlocker/providers/studocu.js",
+        "js/doc-unlocker/providers/slideshare.js",
         "js/doc-unlocker/index.js",
         "js/doc-inject.js"
       ],
