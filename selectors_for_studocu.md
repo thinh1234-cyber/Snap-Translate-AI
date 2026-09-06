@@ -113,18 +113,38 @@ Phần tử bay lơ lửng đè lên toàn bộ tài liệu từ trang 2 - 4 tr�
 
 ---
 
-## 4. Chiến lược Mở khóa & Xuất PDF Hoàn hảo
+## 4. Chiến lược Mở khóa & Xuất PDF Đột phá (Dựa trên kiến trúc `studocuhack`)
 
-1. **Hiển thị lại khung trang & gỡ bỏ Blur filter:**
-   - Đặt `.page-content, [class*="blurredImageWrapper"], .pf, .pc { display: block !important; visibility: visible !important; filter: none !important; opacity: 1 !important; }`.
-2. **Loại bỏ triệt để các Banner che khuất:**
-   - Xóa `[class*="InlineBanner"]`.
-   - Xóa `[class*="PremiumPageClarificationBanner"]` ("Why is this page out of focus?").
-   - Xóa `[class*="PremiumBanner"]`, `[class*="BlobWrapper"]`, `[class*="overflowWrapper"]`.
-   - Xóa `#visible-content-bottom-section` (khối feedback cuối trang).
-3. **Thay thế ảnh mờ Webp bằng ảnh HD Gốc (`bg{N}.png`):**
-   - Trích xuất `bgTemplate` và signed query params từ `bg1.png`.
-   - Với mọi thẻ `img` đang load `blurred/page{N}.webp`, trỏ `src` sang `bg{N}.png?{signed_params}`.
-4. **Chuẩn hóa In ấn Print Stylesheet (`@media print`):**
-   - Phân trang chuẩn xác theo `#page-container > [data-page-index]` với `page-break-after: always;`.
-   - Giữ nguyên ảnh gốc sắc nét, ẩn các thanh công cụ, banner và nút floating.
+1. **Quy tắc đánh số Hexadecimal của StuDocu (`bg{HEX}.png`):**
+   - StuDocu đặt tên file ảnh nền trang bằng **hệ cơ số 16 (Hexadecimal)**:
+     - Trang 1-9: `bg1.png` ... `bg9.png`
+     - Trang 10: `bga.png`
+     - Trang 11: `bgb.png`
+     - Trang 16: `bg10.png`
+   - Thuật toán trích xuất: `pageNum.toString(16)`.
+
+2. **Trích xuất chữ ký số từ `window.__NEXT_DATA__`:**
+   - Next.js chèn toàn bộ dữ liệu xác thực vào thẻ `<script id="__NEXT_DATA__">`.
+   - Thuộc tính `props.pageProps.documentAccess.signedQueryParams` chứa trực tiếp các chuỗi ký hiệu hợp lệ (`sp.png`, `sp.global`, `sp.blurredPage`) và `objectKey`.
+   - Có fallback tự động quét thẻ `img.bi` từ DOM nếu script bị can thiệp.
+
+3. **Thu thập trang gia tăng (Incremental Page Capture):**
+   - Bộ render React của StuDocu tự động **hủy mount (unmount)** các trang bị cuộn ra khỏi khung nhìn.
+   - Do đó, thuật toán cuộn lần lượt từng thẻ `.pf`, đợi DOM ổn định (`waitForPageReady`) và `cloneNode(true)` ngay lập tức trước khi React kịp gỡ bỏ.
+
+4. **Nhúng ảnh trực tiếp dưới dạng Base64 Data URI (`embedImages`):**
+   - Toàn bộ ảnh nền HD và ảnh minh họa được tải bất đồng bộ (concurrency = 6) và chuyển đổi thành `data:image/png;base64,...`.
+   - **Lợi ích:** Tránh 100% lỗi CORS, không bao giờ hết hạn chữ ký CloudFront, và Chrome Print Preview luôn hiển thị tức thì, không bị ảnh trắng.
+
+5. **Modal Xem trước & In cách ly (`#snap-studocu-modal`):**
+   - Toàn bộ các trang đã mở khóa được ghép vào một khung in `.p2hv` bên trong Modal toàn màn hình `#snap-studocu-modal`.
+   - Khi gọi `window.print()`:
+     ```css
+     @media print {
+       body > *:not(#snap-studocu-modal) { display: none !important; }
+       #snap-studocu-modal { position: static !important; background: #fff !important; }
+       #snap-studocu-modal .snap-modal-bar { display: none !important; }
+       #snap-studocu-modal .pf { page-break-after: always !important; }
+     }
+     ```
+   - Chặn 100% rác đề xuất, đánh giá, thanh công cụ và quảng cáo. Bản in PDF xuất ra hoàn toàn tinh khiết.
