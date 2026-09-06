@@ -148,3 +148,10 @@ Phần tử bay lơ lửng đè lên toàn bộ tài liệu từ trang 2 - 4 tr�
      }
      ```
    - Chặn 100% rác đề xuất, đánh giá, thanh công cụ và quảng cáo. Bản in PDF xuất ra hoàn toàn tinh khiết.
+
+6. **Cơ chế Autoscale Đồng bộ theo Trang Đầu (Single-Reference AutoScale):**
+   - **Vấn đề:** StuDocu/pdf2htmlEX xuất file với đơn vị PostScript point gán nhãn px (`595.28px x 841.89px`), khiến kích thước thực tế khi in ra khổ giấy A4 (794px x 1123px) bị nhỏ lại chỉ còn ~75%, xuất hiện khoảng trắng thừa xung quanh.
+   - **Giải pháp:**
+     - Tự động đo kích thước trang đầu tiên ($W_1, H_1$) và nhận diện hướng giấy (Portrait vs Landscape).
+     - Tính toán hệ số phóng đại tối ưu để khớp 98.5% khổ giấy A4 (`scaleFactor = min(targetW/W1, targetH/H1) * 0.985`). Biên an toàn 1.5% loại bỏ hoàn toàn lỗi tràn subpixel gây sinh trang trắng ngắt dòng.
+     - **Đồng bộ hóa 100%:** Áp dụng DUY NHẤT một giá trị `zoom: scaleFactor` tính từ trang đầu tiên cho **tất cả các trang** trong toàn bộ file. Đảm bảo toàn bộ tài liệu có kích thước trang và kích thước font chữ đồng nhất, không bị trang to trang nhỏ.

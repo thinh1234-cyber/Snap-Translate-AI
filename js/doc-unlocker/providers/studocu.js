@@ -592,9 +592,122 @@
             page-break-after: auto !important;
             break-after: auto !important;
           }
+
+          #snap-studocu-modal .snap-modal-pages .pf img.bi,
+          #snap-studocu-modal .snap-modal-pages .pf [class*="blurred"] img,
+          #snap-studocu-modal .snap-modal-pages .pf [class*="Blurred"] img {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: fill !important;
+          }
         }
       `;
       document.head.appendChild(style);
+    },
+
+    // ── Autoscale Engine (Synchronized to First Page Dimensions) ──
+    applyAutoscale(container, modalUI) {
+      const firstPf = container.querySelector(".pf");
+      let origW = 0;
+      let origH = 0;
+
+      // 1. Try reading dimensions from the first page element in DOM
+      if (firstPf) {
+        origW = firstPf.offsetWidth || parseFloat(window.getComputedStyle(firstPf).width);
+        origH = firstPf.offsetHeight || parseFloat(window.getComputedStyle(firstPf).height);
+      }
+
+      // 2. Fallback to original StuDocu DOM element if available
+      if (!origW || !origH) {
+        const domPf = document.querySelector("#page-container .pf") || document.querySelector(".pf");
+        if (domPf) {
+          origW = domPf.offsetWidth || parseFloat(window.getComputedStyle(domPf).width);
+          origH = domPf.offsetHeight || parseFloat(window.getComputedStyle(domPf).height);
+        }
+      }
+
+      // 3. Fallback to first image's natural dimensions if available
+      if (!origW || !origH) {
+        const firstImg = (firstPf && firstPf.querySelector("img")) || document.querySelector("#page-container img");
+        if (firstImg && firstImg.naturalWidth && firstImg.naturalHeight) {
+          origW = firstImg.naturalWidth;
+          origH = firstImg.naturalHeight;
+        }
+      }
+
+      // 4. Default fallback: pdf2htmlEX standard A4 dimensions (595.28 x 841.89 pt/px)
+      if (!origW || origW <= 0) origW = 595.28;
+      if (!origH || origH <= 0) origH = 841.89;
+
+      const isLandscape = origW > origH;
+
+      // Standard A4 printable dimensions in CSS 96-DPI pixels
+      // A4 = 210mm x 297mm => (210/25.4)*96 = ~793.7px, (297/25.4)*96 = ~1122.5px
+      const targetW = isLandscape ? 1122.5 : 793.7;
+      const targetH = isLandscape ? 793.7 : 1122.5;
+
+      const scaleX = targetW / origW;
+      const scaleY = targetH / origH;
+
+      // 98.5% safety margin ensures no subpixel overflow creates blank pages
+      let scaleFactor = Math.min(scaleX, scaleY) * 0.985;
+      scaleFactor = Math.round(scaleFactor * 10000) / 10000;
+
+      console.log(`[SnapDoc] AutoScale synchronized from Page 1: ${scaleFactor} (orig: ${origW}x${origH}, target: ${targetW}x${targetH}, ${isLandscape ? "landscape" : "portrait"})`);
+
+      // Apply single synchronized scale factor to ALL pages across document
+      const allPfs = container.querySelectorAll(".pf");
+      allPfs.forEach(pf => {
+        pf.style.setProperty("zoom", scaleFactor.toString(), "important");
+        pf.style.setProperty("margin", "0 auto", "important");
+      });
+
+      // Inject / replace dynamic print stylesheet
+      const prevDynamic = document.getElementById("snap-studocu-autoscale-style");
+      if (prevDynamic) prevDynamic.remove();
+
+      const dynamicStyle = document.createElement("style");
+      dynamicStyle.id = "snap-studocu-autoscale-style";
+      dynamicStyle.textContent = `
+        @media print {
+          @page {
+            size: ${isLandscape ? "landscape" : "portrait"};
+            margin: 0mm;
+          }
+          #snap-studocu-modal .snap-modal-pages .pf {
+            zoom: ${scaleFactor} !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            border: none !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            position: relative !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: 0 !important;
+            transform: none !important;
+            transform-origin: top center !important;
+          }
+          #snap-studocu-modal .snap-modal-pages .pf:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+        }
+        #snap-studocu-modal .snap-modal-pages .pf {
+          zoom: ${scaleFactor} !important;
+        }
+      `;
+      document.head.appendChild(dynamicStyle);
+
+      // Update button label with precise scale percentage
+      if (modalUI && modalUI.printBtn) {
+        const pct = Math.round(scaleFactor * 100);
+        const oriLabel = isLandscape ? "Khổ Ngang" : "Khổ Dọc";
+        modalUI.printBtn.textContent = `🖨️ In / Lưu PDF (${oriLabel} • Fit ${pct}%)`;
+      }
     },
 
     // ── Build In-Tab Modal UI ─────────────────────────────────
@@ -614,7 +727,7 @@
 
       const printBtn = document.createElement("button");
       printBtn.className = "snap-btn-print";
-      printBtn.textContent = "🖨️ In / Lưu PDF (Khổ Dọc)";
+      printBtn.textContent = "🖨️ In / Lưu PDF";
       printBtn.disabled = true;
       printBtn.style.opacity = "0.5";
       printBtn.addEventListener("click", () => window.print());
@@ -622,7 +735,11 @@
       const closeBtn = document.createElement("button");
       closeBtn.className = "snap-btn-close";
       closeBtn.textContent = "✕ Đóng";
-      closeBtn.addEventListener("click", () => modal.remove());
+      closeBtn.addEventListener("click", () => {
+        modal.remove();
+        const dynamicStyle = document.getElementById("snap-studocu-autoscale-style");
+        if (dynamicStyle) dynamicStyle.remove();
+      });
 
       actions.appendChild(printBtn);
       actions.appendChild(closeBtn);
@@ -699,6 +816,10 @@
         .then(container => {
           modalUI.loading.remove();
           modalUI.pages.appendChild(container);
+
+          // Step 4: Measure Page 1 & Apply Synchronized Autoscale across all pages
+          this.applyAutoscale(container, modalUI);
+
           modalUI.printBtn.disabled = false;
           modalUI.printBtn.style.opacity = "1";
 
@@ -716,3 +837,4 @@
     }
   };
 })();
+
