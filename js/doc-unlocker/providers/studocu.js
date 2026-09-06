@@ -5,8 +5,6 @@
 // ═══════════════════════════════════════════════════════════
 
 (() => {
-  let cleanupTimer = null;
-
   const BANNER_SELECTORS = [
     '[class*="PremiumBannerBlobWrapper"]',
     '[class*="InlineBanner"]',
@@ -136,26 +134,10 @@
           const bgParam = (typeof sp.png === "string" && sp.png) ||
                           (typeof sp.global === "string" && sp.global) || "";
 
-          const pageParams = {};
-          if (Array.isArray(sp.pages)) {
-            sp.pages.forEach(pg => {
-              if (pg?.pageNumber && typeof pg.signedQueryParams === "string") {
-                pageParams[pg.pageNumber] = pg.signedQueryParams;
-              }
-            });
-          }
-
-          const blurParam = (typeof sp.blurredPage === "string" && sp.blurredPage) ||
-                            (typeof sp.global === "string" && sp.global) || "";
-
           if (base && bgParam) {
             return {
               bgPrefix: `${base}/html/bg`,
-              bgSuffix: `.png${bgParam}`,
-              blurPrefix: blurParam ? `${base}/html/pages/blurred/page` : "",
-              blurSuffix: `.webp${blurParam}`,
-              pageParams: pageParams,
-              hasTextLayer: Array.isArray(sp.pages)
+              bgSuffix: `.png${bgParam}`
             };
           }
         }
@@ -166,17 +148,13 @@
       // Fallback: derive pattern from an active high-res image in DOM
       const imgs = document.querySelectorAll(".pf img, img.bi, img[src*='/bg']");
       for (let i = 0; i < imgs.length; i++) {
-        const s = imgs[i].src || "";
+        const s = imgs[i].src || imgs[i].getAttribute("src") || "";
         if (s.includes("/bg") && s.includes("doc-assets")) {
           const match = s.match(/(.*?\/bg)[0-9a-f]+(\.png\?.*)/i);
           if (match) {
             return {
               bgPrefix: match[1],
-              bgSuffix: match[2],
-              blurPrefix: "",
-              blurSuffix: "",
-              pageParams: {},
-              hasTextLayer: true
+              bgSuffix: match[2]
             };
           }
         }
@@ -184,26 +162,21 @@
       return null;
     },
 
-    deblurUrl(url) {
-      if (!url || !url.includes("/blurred/")) return null;
-      return url.replace("/pages/blurred/", "/pages/").replace("/blurred/", "/");
-    },
-
     pageRendered(pf) {
       const hasSpans = pf.querySelectorAll("span").length > 3;
       const img = pf.querySelector("img");
-      const imgLoaded = img && img.complete && img.naturalWidth > 0;
-      return pf.innerHTML.length > 400 && (hasSpans || imgLoaded);
+      const imgLoaded = img && (img.complete || img.naturalWidth > 0);
+      return pf.innerHTML.length > 300 && (hasSpans || imgLoaded);
     },
 
-    waitForPageReady(pf) {
+    waitForPageReady(wrapper) {
       return new Promise(resolve => {
         let lastLen = -1;
         let stable = 0;
         let tries = 0;
         const check = () => {
-          const len = pf.innerHTML.length;
-          if (this.pageRendered(pf)) {
+          const len = wrapper.innerHTML.length;
+          if (this.pageRendered(wrapper)) {
             if (len === lastLen) {
               stable++;
             } else {
@@ -215,11 +188,11 @@
               return;
             }
           }
-          if (tries++ > 25) {
-            resolve();
+          if (tries++ > 15) {
+            resolve(); // ~1.8s timeout cap per page for smooth operation
             return;
           }
-          setTimeout(check, 120);
+          setTimeout(check, 100);
         };
         check();
       });
@@ -227,28 +200,70 @@
 
     // ── Incremental Capture to Defeat Virtualized React Scroller ──
     captureAllPages(onProgress) {
-      const pfs = Array.from(document.querySelectorAll(".pf"));
+      // Find all page wrappers using [data-page-index] to avoid missing virtualized pages
+      let pageWrappers = Array.from(
+        document.querySelectorAll("#page-container > [data-page-index]")
+      );
+      if (!pageWrappers.length) {
+        pageWrappers = Array.from(document.querySelectorAll("[data-page-index]"));
+      }
+      if (!pageWrappers.length) {
+        pageWrappers = Array.from(document.querySelectorAll(".pf"));
+      }
+
+      const total = pageWrappers.length || 1;
+      const captured = [];
       const container = document.getElementById("viewer-wrapper") ||
                         document.getElementById("document-wrapper") ||
                         document.scrollingElement || document.documentElement;
       const savedTop = container ? container.scrollTop : 0;
-      const captured = [];
 
       return new Promise(resolve => {
         let i = 0;
         const next = () => {
-          if (i >= pfs.length) {
+          if (i >= pageWrappers.length) {
             if (container) container.scrollTop = savedTop;
             resolve(captured);
             return;
           }
-          const pf = pfs[i];
-          pf.scrollIntoView({ behavior: "instant", block: "center" });
 
-          this.waitForPageReady(pf).then(() => {
-            captured.push(pf.cloneNode(true));
+          const wrapper = pageWrappers[i];
+
+          // 1. Force unhide wrapper and its children BEFORE scrolling
+          wrapper.style.setProperty("display", "block", "important");
+          wrapper.style.setProperty("visibility", "visible", "important");
+          wrapper.style.setProperty("opacity", "1", "important");
+
+          wrapper.querySelectorAll(".page-content, [class*='blurred'], [class*='Blurred'], .pf, .pc").forEach(el => {
+            el.style.setProperty("display", "block", "important");
+            el.style.setProperty("visibility", "visible", "important");
+            el.style.setProperty("opacity", "1", "important");
+            el.style.setProperty("filter", "none", "important");
+            el.style.setProperty("-webkit-filter", "none", "important");
+          });
+
+          // 2. Remove lazy loading on all images inside this page
+          wrapper.querySelectorAll("img").forEach(img => {
+            img.removeAttribute("loading");
+            img.setAttribute("loading", "eager");
+            img.style.setProperty("filter", "none", "important");
+            img.style.setProperty("opacity", "1", "important");
+          });
+
+          // 3. Scroll this page into view to trigger content hydration
+          wrapper.scrollIntoView({ behavior: "instant", block: "center" });
+
+          // 4. Wait for page stability and capture
+          this.waitForPageReady(wrapper).then(() => {
+            const pf = wrapper.classList.contains("pf") ? wrapper : wrapper.querySelector(".pf");
+            if (pf) {
+              captured.push(pf.cloneNode(true));
+            } else {
+              captured.push(wrapper.cloneNode(true));
+            }
+
             i++;
-            if (onProgress) onProgress(i, pfs.length);
+            if (onProgress) onProgress(i, total);
             next();
           });
         };
@@ -326,16 +341,19 @@
       });
     },
 
-    // ── Assemble Pure `.p2hv` Container ───────────────────────
+    // ── Assemble Pure `.p2hv` Container with HD Images ────────
     assembleContainer(capturedPages, pattern) {
       const container = document.createElement("div");
       container.className = "p2hv";
 
-      capturedPages.forEach((pf, idx) => {
-        pf.removeAttribute("style");
-        pf.querySelectorAll("[class*='ClarificationBanner'], [class*='Banner'], [class*='BlobWrapper']").forEach(e => e.remove());
+      capturedPages.forEach((item, idx) => {
+        const pf = item.classList.contains("pf") ? item : (item.querySelector(".pf") || item);
 
-        // Unhide all inner contents
+        pf.removeAttribute("style");
+        // Remove paywall banners and clarification banners
+        pf.querySelectorAll("[class*='ClarificationBanner'], [class*='Banner'], [class*='BlobWrapper'], [class*='Shapes']").forEach(e => e.remove());
+
+        // Remove any inline display:none
         pf.querySelectorAll("[style]").forEach(e => {
           const st = e.getAttribute("style") || "";
           if (/display:\s*none/i.test(st)) {
@@ -343,39 +361,36 @@
           }
         });
 
+        // Ensure all page-content and pc layers are visible and unblurred
+        pf.querySelectorAll(".page-content, .pc").forEach(pc => {
+          pc.style.setProperty("display", "block", "important");
+          pc.style.setProperty("visibility", "visible", "important");
+          pc.style.setProperty("filter", "none", "important");
+          pc.style.setProperty("opacity", "1", "important");
+        });
+
         const pageNum = idx + 1;
-        const gated = !!(pattern && pattern.hasTextLayer && !pattern.pageParams[pageNum]);
+        const hexPage = pageNum.toString(16);
 
-        if (pattern && pattern.bgSuffix) {
+        // Always point background image to HD URL with CloudFront wildcard signature
+        if (pattern && pattern.bgPrefix && pattern.bgSuffix) {
           let img = pf.querySelector("img.bi") || pf.querySelector("img");
-          const cur = img ? (img.getAttribute("src") || "") : "";
-
           if (!img) {
             img = document.createElement("img");
             img.className = "bi x0 y0 w1 h1";
             (pf.querySelector(".pc") || pf).appendChild(img);
           }
 
-          if (gated) {
-            if (!cur.includes("/pages/blurred/") && pattern.blurPrefix) {
-              img.setAttribute("src", `${pattern.blurPrefix}${pageNum}${pattern.blurSuffix}`);
-            }
-          } else {
-            const clear = this.deblurUrl(cur);
-            // StuDocu uses Hexadecimal numbering for background images (/html/bg{HEX}.png)
-            const hexPage = pageNum.toString(16);
-            img.setAttribute("src", clear || `${pattern.bgPrefix}${hexPage}${pattern.bgSuffix}`);
-          }
+          const hdUrl = `${pattern.bgPrefix}${hexPage}${pattern.bgSuffix}`;
+          img.setAttribute("src", hdUrl);
           img.removeAttribute("srcset");
           img.removeAttribute("data-src");
+          img.removeAttribute("loading");
+          img.style.setProperty("filter", "none", "important");
+          img.style.setProperty("-webkit-filter", "none", "important");
+          img.style.setProperty("opacity", "1", "important");
+          img.style.setProperty("visibility", "visible", "important");
         }
-
-        pf.querySelectorAll(".page-content, .pc").forEach(pc => {
-          pc.style.setProperty("display", "block", "important");
-          pc.style.setProperty("filter", "none", "important");
-          pc.style.setProperty("visibility", "visible", "important");
-          pc.style.setProperty("opacity", "1", "important");
-        });
 
         container.appendChild(pf);
       });
@@ -383,7 +398,7 @@
       return container;
     },
 
-    // ── Inject Print & Overlay Styles ─────────────────────────
+    // ── Inject Print & Overlay Styles (Perfect Centering + Portrait) ──
     injectOverlayStyles() {
       if (document.getElementById("snap-studocu-modal-style")) return;
 
@@ -468,16 +483,30 @@
           background: linear-gradient(90deg, #1a73e8, #00d2ff) !important;
           transition: width 0.2s !important;
         }
+
+        /* ── Modal Page Layout (Centered) ── */
+        #snap-studocu-modal .snap-modal-pages {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          width: 100% !important;
+          padding: 20px 0 60px !important;
+        }
         #snap-studocu-modal .snap-modal-pages .p2hv {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          width: 100% !important;
           margin: 0 auto !important;
         }
         #snap-studocu-modal .snap-modal-pages .pf {
           margin: 16px auto !important;
           background: #ffffff !important;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
           display: block !important;
           filter: none !important;
           opacity: 1 !important;
+          position: relative !important;
         }
         #snap-studocu-modal .snap-modal-pages .page-content,
         #snap-studocu-modal .snap-modal-pages .pc {
@@ -492,19 +521,29 @@
           visibility: visible !important;
         }
 
-        /* ── Isolated Print Stylesheet ── */
+        /* ── Isolated Print Stylesheet (Fixes Shifted / Off-Center Bug) ── */
         @media print {
-          body > *:not(#snap-studocu-modal) {
-            display: none !important;
-            visibility: hidden !important;
+          @page {
+            size: portrait;
+            margin: 0mm;
           }
+
           html, body {
             background: #ffffff !important;
             height: auto !important;
             overflow: visible !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
+
+          body > *:not(#snap-studocu-modal) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
           #snap-studocu-modal {
             position: static !important;
             inset: auto !important;
@@ -513,22 +552,45 @@
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
           }
+
           #snap-studocu-modal .snap-modal-bar {
             display: none !important;
           }
-          #snap-studocu-modal .snap-modal-pages .pf {
+
+          #snap-studocu-modal .snap-modal-pages {
+            width: 100% !important;
             margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+          }
+
+          #snap-studocu-modal .snap-modal-pages .p2hv {
+            width: 100% !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            display: block !important;
+            transform: none !important;
+          }
+
+          #snap-studocu-modal .snap-modal-pages .pf {
+            margin: 0 auto !important; /* PERFECT HORIZONTAL CENTERING */
             box-shadow: none !important;
+            border: none !important;
             page-break-after: always !important;
             break-after: page !important;
+            position: relative !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: 0 !important;
+            transform: none !important;
+            transform-origin: top center !important;
           }
+
           #snap-studocu-modal .snap-modal-pages .pf:last-child {
             page-break-after: auto !important;
-          }
-          @page {
-            size: auto;
-            margin: 0mm;
+            break-after: auto !important;
           }
         }
       `;
@@ -552,7 +614,7 @@
 
       const printBtn = document.createElement("button");
       printBtn.className = "snap-btn-print";
-      printBtn.textContent = "🖨️ In / Lưu PDF";
+      printBtn.textContent = "🖨️ In / Lưu PDF (Khổ Dọc)";
       printBtn.disabled = true;
       printBtn.style.opacity = "0.5";
       printBtn.addEventListener("click", () => window.print());
@@ -602,8 +664,8 @@
     generatePDF(UI) {
       const title = this.getTitle();
 
-      if (!document.querySelector(".p2hv") || document.querySelectorAll(".pf").length === 0) {
-        alert("SnapDoc: Không tìm thấy khung tài liệu (.pf). Hãy cuộn tài liệu một chút rồi bấm Tải lại nhé.");
+      if (!document.querySelector(".p2hv") && document.querySelectorAll("[data-page-index]").length === 0) {
+        alert("SnapDoc: Không tìm thấy khung tài liệu. Hãy cuộn tài liệu một chút rồi bấm Tải lại nhé.");
         return;
       }
 
@@ -613,22 +675,22 @@
 
       const pattern = this.getImagePattern();
 
-      // Step 1: Incremental page capture
+      // Step 1: Incremental page capture across all pages
       this.captureAllPages((done, total) => {
-        const pct = Math.round((done / total) * 65);
+        const pct = Math.round((done / total) * 60);
         modalUI.fill.style.width = `${pct}%`;
-        modalUI.sub.textContent = `Đang mở khóa trang ${done} / ${total}...`;
-        if (UI) UI.updateProgress(`Mở khóa trang ${done} / ${total}`, pct);
+        modalUI.sub.textContent = `Đang thu thập và unblur trang ${done} / ${total}...`;
+        if (UI) UI.updateProgress(`Thu thập trang ${done} / ${total}`, pct);
       })
         .then(capturedPages => {
           if (!capturedPages.length) throw new Error("No pages captured");
 
-          // Step 2: Assemble pure .p2hv container with Hex-backgrounds
+          // Step 2: Assemble pure .p2hv container with HD Hex-backgrounds
           const container = this.assembleContainer(capturedPages, pattern);
 
           // Step 3: Embed all images as Base64 Data URIs
           return this.embedImages(container, (done, total) => {
-            const pct = 65 + Math.round((total ? done / total : 1) * 35);
+            const pct = 60 + Math.round((total ? done / total : 1) * 40);
             modalUI.fill.style.width = `${pct}%`;
             modalUI.sub.textContent = `Đang nạp ảnh HD chất lượng cao (${done} / ${total})...`;
             if (UI) UI.updateProgress(`Nạp ảnh HD (${done} / ${total})`, pct);
