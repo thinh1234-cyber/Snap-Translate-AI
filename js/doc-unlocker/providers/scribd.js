@@ -3,9 +3,10 @@
 // Tối ưu hóa toàn diện cho cả tài liệu ngắn lẫn tài liệu lớn (>30-100 trang):
 // 1. Chuyển sang clean embed URL: https://www.scribd.com/embeds/{id}/content
 // 2. Main World Bridge: Chặn triệt để cơ chế unmount/hiding trang trong window.docManager
-// 3. Tải song song tất cả các trang JSONP và nạp đầy đủ ảnh/ký hiệu vector
-// 4. Ép buộc 100% outer_page & inner_page hiển thị đầy đủ (không sót bất kỳ trang nào)
-// 5. Căn chỉnh trang in chuẩn 100vh, gán snap-last-page để loại bỏ triệt để trang trắng thừa ở cuối
+// 3. Pipeline quét theo nhóm (Chunked Batch Pipeline) chống rớt trang đối với tài liệu lớn (60-100 trang)
+// 4. Nạp đầy đủ ảnh/ký hiệu vector/absimg của từng trang
+// 5. Căn chỉnh tỷ lệ in ấn A4 (printScale) chuẩn xác, chống cắt xén góc phải và không bị tách đôi trang dọc
+// 6. Gán class snap-last-page để loại bỏ triệt để trang trắng thừa ở cuối
 // ═══════════════════════════════════════════════════════════
 
 (() => {
@@ -28,23 +29,23 @@
         return;
       }
 
-      // Bước 2: Kích hoạt Main World Bridge vô hiệu hóa cơ chế ẩn/xóa trang ngầm của Scribd
+      // Bước 2: Kích hoạt Main World Bridge can thiệp trực tiếp vào window.docManager
       this.injectMainWorldBridge();
 
-      // Bước 3: Căn fit page theo chiều dọc của window và chuẩn bị Print CSS
-      UI.showProgress("Scribd Downloader", "Đang căn chỉnh tỷ lệ và nạp tài nguyên...");
-      const fitScale = this.applyFitVerticalScale();
+      // Bước 3: Tính toán tỷ lệ co giãn A4 chuẩn xác và cài đặt stylesheet
+      UI.showProgress("Scribd Downloader", "Đang khởi tạo cấu trúc và tính toán tỷ lệ...");
+      const { printScale, fitScale } = this.applyPrintScaleEngine();
 
-      // Bước 4: SCROLL QUÉT & NẠP TOÀN BỘ CÁC TRANG
+      // Bước 4: PIPELINE QUÉT THEO TỪNG NHÓM (CHUNKED BATCH PIPELINE)
       await this.scrollFullDocument(UI, fitScale);
 
       // Bước 5: DỌN DẸP & ÉP HIỂN THỊ 100% CẢ OUTER LẪN INNER PAGE
-      UI.updateProgress("Đang mở khóa toàn bộ các trang...", 96);
+      UI.updateProgress("Đang hoàn tất đóng gói toàn bộ các trang...", 96);
       this.cleanupDOM();
 
       UI.updateProgress("Hoàn tất nạp 100%! Đang mở hộp thoại in...", 100);
 
-      // Bước 6: Pop up Print
+      // Bước 6: Mở hộp thoại in sau nhịp nghỉ ngắn
       setTimeout(() => {
         const btn = document.getElementById("snap-doc-floating-btn");
         if (btn) btn.remove();
@@ -56,7 +57,7 @@
 
         UI.hideProgress();
         window.print();
-      }, 600);
+      }, 700);
     },
 
     // ── Main World Bridge: Can thiệp trực tiếp vào scope thực của Scribd ──
@@ -81,47 +82,84 @@
               try { window.docManager.viewportManager.disable(); } catch (e) {}
             }
 
-            // Chặn p.hide() trên từng trang (ngăn unmount DOM)
+            // Chặn p.hide() và p.remove() trên từng trang để Scribd không bao giờ gỡ bỏ innerPageElem
             if (window.docManager.pages) {
               Object.values(window.docManager.pages).forEach(p => {
                 if (p) {
                   p.hide = function() {};
+                  p.remove = function() {};
                 }
               });
             }
           }
 
-          function forceLoadAll() {
+          function loadChunk(start, end) {
             neutralize();
             if (!window.docManager || !window.docManager.pages) return;
-            Object.values(window.docManager.pages).forEach(p => {
+            for (let i = start; i <= end; i++) {
+              const p = window.docManager.pages[i];
               if (p) {
                 p.hide = function() {};
+                p.remove = function() {};
                 if (typeof p.load === 'function' && !p.loadHasStarted) {
                   try { p.load(); } catch (e) {}
                 }
                 if (typeof p.display === 'function') {
                   try { p.display(true); } catch (e) {}
                 }
+                if (p.containerElem && typeof window.docManager.loadImages === 'function') {
+                  try { window.docManager.loadImages(p.containerElem); } catch (e) {}
+                }
               }
-            });
+            }
           }
 
           neutralize();
-          const timer = setInterval(neutralize, 1000);
+          setInterval(neutralize, 800);
 
-          window.addEventListener("SNAP_SCRIBD_LOAD_ALL", forceLoadAll);
+          window.addEventListener("SNAP_SCRIBD_LOAD_CHUNK", (e) => {
+            const detail = e.detail || {};
+            loadChunk(detail.start || 1, detail.end || 9999);
+          });
+
+          window.addEventListener("SNAP_SCRIBD_LOAD_ALL", () => {
+            neutralize();
+            if (window.docManager && window.docManager.pages) {
+              loadChunk(1, Object.keys(window.docManager.pages).length);
+            }
+          });
         })();
       `;
       (document.head || document.documentElement).appendChild(script);
     },
 
-    // ── Căn fit page theo chiều dọc của window ────────────────
-    applyFitVerticalScale() {
+    // ── Engine tính toán tỷ lệ A4 chuẩn xác chống cắt góc & chống tách đôi trang ──
+    applyPrintScaleEngine() {
       const firstPage = document.querySelector(".outer_page");
-      const pageH = (firstPage && firstPage.offsetHeight) ? firstPage.offsetHeight : 1167;
-      const targetH = window.innerHeight - 30;
-      let fitScale = Math.round((targetH / pageH) * 100) / 100;
+      let origW = 901;
+      let origH = 1275;
+
+      if (firstPage) {
+        origW = firstPage.offsetWidth || parseInt(firstPage.style.width, 10) || 901;
+        origH = firstPage.offsetHeight || parseInt(firstPage.style.height, 10) || 1275;
+      }
+
+      const isLandscape = origW > origH;
+
+      // Tiêu chuẩn in ấn A4 (pixels 96 DPI):
+      // Portrait: 793.7 x 1122.5 | Landscape: 1122.5 x 793.7
+      const paperW = isLandscape ? 1122.5 : 793.7;
+      const paperH = isLandscape ? 793.7 : 1122.5;
+
+      // Tỷ lệ co giãn để vừa khít cả ngang lẫn dọc tờ A4, có khoảng đệm 2% an toàn
+      const scaleX = paperW / origW;
+      const scaleY = paperH / origH;
+      let printScale = Math.min(scaleX, scaleY) * 0.98;
+      printScale = Math.round(printScale * 1000) / 1000;
+
+      // Tỷ lệ hiển thị trên màn hình xem trước
+      const targetScreenH = window.innerHeight - 30;
+      let fitScale = Math.round((targetScreenH / origH) * 100) / 100;
       fitScale = Math.min(1, Math.max(0.35, fitScale));
 
       const docContainer = document.querySelector(".document_container") || document.querySelector(".outer_page_container");
@@ -130,159 +168,158 @@
         docContainer.style.setProperty("margin", "0 auto");
       }
 
-      // Khi in ra giấy, sử dụng layout 100vh và snap-last-page chống tràn + chống dư trang trắng
-      let printStyle = document.getElementById("snap-scribd-print-scale");
-      if (!printStyle) {
-        printStyle = document.createElement("style");
-        printStyle.id = "snap-scribd-print-scale";
-        printStyle.textContent = `
-          @media print {
-            @page {
-              size: auto;
-              margin: 0mm;
-            }
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background: #fff !important;
-              overflow: visible !important;
-            }
-            .document_container, .outer_page_container {
-              margin: 0 !important;
-              padding: 0 !important;
-              zoom: 1 !important;
-              overflow: visible !important;
-              width: 100% !important;
-            }
-            .not_visible, .blurred_page, .placeholder {
-              display: block !important;
-              visibility: visible !important;
-            }
-            .outer_page {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-              page-break-after: always !important;
-              break-after: page !important;
-              display: block !important;
-              visibility: visible !important;
-              opacity: 1 !important;
-              margin: 0 auto !important;
-              padding: 0 !important;
-              max-height: 100vh !important;
-              height: 100vh !important;
-              width: auto !important;
-              overflow: hidden !important;
-              box-sizing: border-box !important;
-              background: #fff !important;
-            }
-            .outer_page.snap-last-page,
-            .outer_page:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
-            .inner_page {
-              display: block !important;
-              visibility: visible !important;
-              opacity: 1 !important;
-              max-height: 100% !important;
-              height: 100% !important;
-            }
-            .between_page_ads, .between_page_module, .related_docs, .document_cell,
-            .toolbar_drop, .mobile_overlay, header, footer, .global_header,
-            .bottom_actions, #font_preload_bed {
-              display: none !important;
-            }
-          }
-        `;
-        document.head.appendChild(printStyle);
-      }
+      // Cập nhật Stylesheet in ấn
+      const prevPrintStyle = document.getElementById("snap-scribd-print-scale");
+      if (prevPrintStyle) prevPrintStyle.remove();
 
-      return fitScale;
+      const printStyle = document.createElement("style");
+      printStyle.id = "snap-scribd-print-scale";
+      printStyle.textContent = `
+        @media print {
+          @page {
+            size: ${isLandscape ? "landscape" : "portrait"};
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            overflow: visible !important;
+          }
+          .document_container, .outer_page_container {
+            zoom: ${printScale} !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            overflow: visible !important;
+          }
+          .not_visible, .blurred_page, .placeholder {
+            display: block !important;
+            visibility: visible !important;
+          }
+          .outer_page {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            width: ${origW}px !important;
+            height: ${origH}px !important;
+            box-shadow: none !important;
+            border: none !important;
+            box-sizing: border-box !important;
+            background: #fff !important;
+          }
+          .outer_page.snap-last-page,
+          .outer_page:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .inner_page {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: 100% !important;
+          }
+          .between_page_ads, .between_page_module, .related_docs, .document_cell,
+          .toolbar_drop, .mobile_overlay, header, footer, .global_header,
+          .bottom_actions, #font_preload_bed, .ad_unit, .banner {
+            display: none !important;
+          }
+        }
+      `;
+      document.head.appendChild(printStyle);
+
+      return { printScale, fitScale };
     },
 
-    // ── Scroll quét trước và chờ nạp 100% trang (cả tài liệu lớn) ──
+    // ── Pipeline quét nạp theo từng nhóm trang (Chunked Batch Pipeline) ──
     async scrollFullDocument(UI, fitScale) {
       const scroller = document.querySelector(".document_scroller");
-
-      // Báo hiệu Main World nạp trước toàn bộ JSONP
-      window.dispatchEvent(new CustomEvent("SNAP_SCRIBD_LOAD_ALL"));
-
       const pages = Array.from(document.querySelectorAll(".outer_page"));
       const total = pages.length || 1;
-      const pctScale = Math.round(fitScale * 100);
 
-      // Đánh dấu trang cuối để chống dư 1 trang trắng ở cuối
+      // Đánh dấu trang cuối cùng để CSS không thêm trang trắng thừa
       if (pages.length > 0) {
         pages[pages.length - 1].classList.add("snap-last-page");
       }
 
-      // Điều chỉnh nhịp quét phù hợp: tài liệu dài quét nhanh hơn
-      const delay = total > 25 ? 120 : 280;
+      // Xử lý theo từng nhóm 5 trang (Batch Size = 5)
+      // Giúp không làm nghẽn hàng đợi JSONP và chống bị chặn mạng
+      const CHUNK_SIZE = 5;
 
-      for (let i = 0; i < pages.length; i++) {
-        const pageEl = pages[i];
-        if (!pageEl) continue;
+      for (let c = 0; c < pages.length; c += CHUNK_SIZE) {
+        const chunkStart = c + 1;
+        const chunkEnd = Math.min(pages.length, c + CHUNK_SIZE);
 
-        // Cuộn trang hiện tại vào tầm nhìn
-        pageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Kích hoạt nạp dữ liệu cho nhóm trang hiện tại qua Main World Bridge
+        window.dispatchEvent(new CustomEvent("SNAP_SCRIBD_LOAD_CHUNK", {
+          detail: { start: chunkStart, end: chunkEnd }
+        }));
 
-        if (scroller) {
-          scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
-        }
+        for (let i = c; i < chunkEnd; i++) {
+          const pageEl = pages[i];
+          if (!pageEl) continue;
 
-        // Chờ trang render xong .inner_page
-        if (!pageEl.querySelector(".inner_page") || pageEl.querySelector(".page_missing, .page_loading")) {
-          window.dispatchEvent(new CustomEvent("SNAP_SCRIBD_LOAD_ALL"));
-          let waitAttempts = 0;
-          while (!pageEl.querySelector(".inner_page") && waitAttempts < 30) {
-            await new Promise(r => setTimeout(r, 80));
-            waitAttempts++;
+          // Cuộn trang vào tầm nhìn
+          pageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (scroller) {
+            scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
           }
-        }
 
-        // Đảm bảo các thuộc tính hiển thị trên trang hiện tại
-        pageEl.classList.remove("not_visible", "blurred_page", "placeholder");
-        pageEl.style.setProperty("display", "block", "important");
-        pageEl.style.setProperty("visibility", "visible", "important");
-        pageEl.style.setProperty("opacity", "1", "important");
+          // Chờ trang có .inner_page
+          let attempts = 0;
+          while (!pageEl.querySelector(".inner_page") && attempts < 50) {
+            await new Promise(r => setTimeout(r, 100));
+            attempts++;
+          }
 
-        const inner = pageEl.querySelector(".inner_page");
-        if (inner) {
-          inner.style.setProperty("display", "block", "important");
-          inner.style.setProperty("visibility", "visible", "important");
-          inner.style.setProperty("opacity", "1", "important");
-        }
+          // Đảm bảo trạng thái hiển thị
+          pageEl.classList.remove("not_visible", "blurred_page", "placeholder");
+          pageEl.style.setProperty("display", "block", "important");
+          pageEl.style.setProperty("visibility", "visible", "important");
+          pageEl.style.setProperty("opacity", "1", "important");
 
-        // Nạp và kích hoạt ảnh absimg / công thức
-        const pageImgs = Array.from(pageEl.querySelectorAll("img"));
-        pageImgs.forEach(img => {
-          img.style.setProperty("display", "block", "important");
-          img.style.setProperty("visibility", "visible", "important");
+          const inner = pageEl.querySelector(".inner_page");
+          if (inner) {
+            inner.style.setProperty("display", "block", "important");
+            inner.style.setProperty("visibility", "visible", "important");
+            inner.style.setProperty("opacity", "1", "important");
+          }
 
-          if (!img.src || img.src === window.location.href || img.src.startsWith("data:")) {
+          // Kích hoạt tất cả ảnh .absimg trên trang
+          const pageImgs = Array.from(pageEl.querySelectorAll("img"));
+          pageImgs.forEach(img => {
+            img.style.setProperty("display", "block", "important");
+            img.style.setProperty("visibility", "visible", "important");
+
             const orig = img.getAttribute("orig") || img.getAttribute("data-orig") || img.getAttribute("data-src");
-            if (orig) {
+            if (orig && (!img.src || img.src === window.location.href || img.src.startsWith("data:"))) {
               img.src = orig;
             }
-          }
-        });
+          });
 
-        // Chờ các ảnh chưa nạp xong
-        const pendingImgs = pageImgs.filter(img => !img.complete || img.naturalWidth === 0);
-        if (pendingImgs.length > 0) {
-          await Promise.all(pendingImgs.map(img => {
-            return new Promise(resolve => {
-              img.addEventListener("load", resolve, { once: true });
-              img.addEventListener("error", resolve, { once: true });
-              setTimeout(resolve, 800);
-            });
-          }));
+          // Chờ các ảnh hoàn tất nạp
+          const pendingImgs = pageImgs.filter(img => !img.complete || img.naturalWidth === 0);
+          if (pendingImgs.length > 0) {
+            await Promise.all(pendingImgs.map(img => new Promise(res => {
+              img.addEventListener("load", res, { once: true });
+              img.addEventListener("error", res, { once: true });
+              setTimeout(res, 600);
+            })));
+          }
+
+          const pct = Math.round(((i + 1) / total) * 94);
+          if (UI) UI.updateProgress(`Đang quét nạp trang ${i + 1} / ${total} (Nhóm ${Math.floor(c / CHUNK_SIZE) + 1})...`, pct);
         }
 
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        const pct = Math.round(((i + 1) / total) * 92);
-        if (UI) UI.updateProgress(`Đang quét nạp trang ${i + 1} / ${total} (Fit ${pctScale}%)...`, pct);
+        // Nhịp nghỉ ngắn giữa các nhóm trang để trình duyệt ổn định bộ nhớ
+        await new Promise(r => setTimeout(r, 150));
       }
 
       // Cuộn chạm đáy cuối cùng
@@ -296,7 +333,7 @@
 
     // ── Xóa các element rác & bung toàn bộ các trang 100% ────────
     cleanupDOM() {
-      // 1. Gửi tín hiệu Main World ép hiển thị toàn bộ trang
+      // 1. Gửi tín hiệu Main World ép bảo lưu toàn bộ trang
       window.dispatchEvent(new CustomEvent("SNAP_SCRIBD_LOAD_ALL"));
 
       // 2. Xóa class "document_scroller" để layout bung tự do theo đúng hướng dẫn tài liệu
@@ -307,10 +344,10 @@
         scroller.style.setProperty("height", "auto", "important");
       }
 
-      // 3. Xóa các div overlay/toolbar rác
+      // 3. Xóa các div overlay/toolbar/quảng cáo rác
       document.querySelectorAll(".toolbar_drop").forEach(el => el.remove());
       document.querySelectorAll(".mobile_overlay").forEach(el => el.remove());
-      document.querySelectorAll("#between_page_ads, .between_page_ads, .brand_header, .sticky_header, header, footer, .global_header, .bottom_actions, .related_docs, .document_cell").forEach(el => el.remove());
+      document.querySelectorAll("#between_page_ads, .between_page_ads, .brand_header, .sticky_header, header, footer, .global_header, .bottom_actions, .related_docs, .document_cell, .ad_unit, .banner").forEach(el => el.remove());
 
       // 4. Đảm bảo 100% outer_page VÀ inner_page đều display: block
       const allOuterPages = Array.from(document.querySelectorAll(".outer_page"));
