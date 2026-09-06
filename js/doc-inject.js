@@ -9,7 +9,7 @@
 
   const currentHost = window.location.hostname;
   const isScribd = currentHost.includes("scribd.com");
-  const isStudocu = currentHost.includes("studocu.com");
+  const isStudocu = currentHost.includes("studocu.com") || currentHost.includes("studocu.vn");
 
   if (!isScribd && !isStudocu) return;
 
@@ -27,7 +27,6 @@
     window.addEventListener("DOMContentLoaded", () => {
       setTimeout(startDownloadFlow, 1500);
     });
-    // Fallback if already loaded
     if (document.readyState === "complete" || document.readyState === "interactive") {
       setTimeout(startDownloadFlow, 1500);
     }
@@ -80,7 +79,6 @@
     document.body.appendChild(btn);
   }
 
-  // Inject floating button when ready
   if (document.body) {
     injectFloatingButton();
   } else {
@@ -102,7 +100,6 @@
   function handleScribdFlow() {
     const pathname = window.location.pathname;
 
-    // Case A: User is on regular Scribd document view (e.g. /document/12345/...)
     const docMatch = pathname.match(/\/(?:document|doc)\/(\d+)/);
     if (docMatch && !pathname.includes("/embeds/")) {
       const docId = docMatch[1];
@@ -111,13 +108,9 @@
       return;
     }
 
-    // Case B: User is on embed page (or redirected with hash)
     showProgressOverlay("Scribd Downloader", "Đang khởi tạo nạp tài liệu...");
-
-    // Remove Scribd bloat & restrictive layouts
     cleanScribdDOM();
 
-    // Scroll through all pages
     scrollAllScribdPages(() => {
       updateProgressOverlay("Hoàn tất nạp!", 100);
       setTimeout(() => {
@@ -145,7 +138,6 @@
       document.querySelectorAll(sel).forEach(el => el.remove());
     });
 
-    // Make scrollers full height & visible
     const scroller = document.querySelector(".document_scroller");
     if (scroller) {
       scroller.style.overflow = "visible";
@@ -222,76 +214,173 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 2. STUDOCU DOWNLOAD ENGINE
+  // 2. STUDOCU DOWNLOAD ENGINE (Overhauled for modern Next.js & .vn)
   // ═══════════════════════════════════════════════════════════
-  function handleStudocuFlow() {
-    showProgressOverlay("StuDocu Downloader", "Đang mở khóa nội dung & gỡ bỏ giới hạn...");
+  let studocuCleanerTimer = null;
 
-    // 1. Remove CSS Blurs and Paywalls
+  function handleStudocuFlow() {
+    showProgressOverlay("StuDocu Downloader", "Đang gỡ bỏ lớp che phủ & mở khóa trang...");
+
+    // 1. Permanently inject CSS unblur and banner destruction
     unblurStudocu();
 
-    // 2. Auto-scroll to load all pages
+    // 2. Start continuous cleanup loop to delete any dynamically spawned banners
+    studocuCleanerTimer = setInterval(removeStudocuBanners, 300);
+
+    // 3. Scroll all pages to force load
     scrollAllStudocuPages(() => {
+      // Final pass on image swap & unblur
+      swapBlurredImages();
+      removeStudocuBanners();
+
       updateProgressOverlay("Hoàn tất mở khóa!", 100);
       setTimeout(() => {
+        if (studocuCleanerTimer) clearInterval(studocuCleanerTimer);
         hideProgressOverlay();
         injectStudocuPrintStyles();
         window.print();
-      }, 800);
+      }, 1000);
+    });
+  }
+
+  function removeStudocuBanners() {
+    // Delete all banner overlays identified in temp.txt
+    const bannerSelectors = [
+      "[class*='PremiumBanner']",
+      "[class*='BlobWrapper']",
+      "[class*='previewBanner']",
+      "[class*='isFloating']",
+      "[class*='overflowWrapper']",
+      "[class*='blobContainer']",
+      "[class*='Shapes']",
+      "#paywall",
+      "#paywall-wrapper",
+      ".paywall-wrapper",
+      "#premium-page-header",
+      "[class*='paywall']",
+      "[data-test-id*='paywall']",
+      ".banner-wrapper",
+      "[class*='viewer-banner']",
+      "[class*='upsell']",
+      "[class*='Upsell']"
+    ];
+
+    bannerSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        try {
+          el.remove();
+        } catch (e) {
+          el.style.display = "none !important";
+        }
+      });
+    });
+
+    // Remove any sticky/fixed element sitting on top of the document
+    const docWrapper = document.getElementById("document-wrapper") || document.querySelector(".document-wrapper");
+    if (docWrapper) {
+      docWrapper.querySelectorAll("div").forEach(div => {
+        try {
+          const s = window.getComputedStyle(div);
+          if (s.position === "sticky" || s.position === "fixed") {
+            const txt = (div.innerText || "").toLowerCase();
+            if (txt.includes("premium") || txt.includes("preview") || txt.includes("unlock") || txt.includes("trial")) {
+              div.remove();
+            }
+          }
+        } catch (e) {}
+      });
+    }
+
+    // Unblur any inline styled elements
+    document.querySelectorAll("*").forEach(el => {
+      if (el.style && el.style.filter && el.style.filter.includes("blur")) {
+        el.style.filter = "none";
+      }
+    });
+
+    // Swap any blurred image URLs
+    swapBlurredImages();
+  }
+
+  function swapBlurredImages() {
+    let bgTemplate = null;
+    const allImgs = Array.from(document.querySelectorAll("img"));
+
+    for (const img of allImgs) {
+      const match = img.src && img.src.match(/(.*\/)bg[0-9]+\.png(\?.*)?$/);
+      if (match) {
+        bgTemplate = match[1];
+        break;
+      }
+    }
+
+    allImgs.forEach(img => {
+      if (!img.src) return;
+      const blurMatch = img.src.match(/blurred\/page([0-9]+)\.webp(\?.*)?$/);
+      if (blurMatch && bgTemplate) {
+        const pageIdx = blurMatch[1];
+        img.src = `${bgTemplate}bg${pageIdx}.png`;
+      }
     });
   }
 
   function unblurStudocu() {
-    // Inject permanent unblur rule
+    if (document.getElementById("snap-studocu-unblur-style")) return;
+
     const style = document.createElement("style");
     style.id = "snap-studocu-unblur-style";
     style.innerHTML = `
-      .blurred-page, [class*="blurred"], [class*="blur-"] {
+      /* 1. Force unblur on all text and containers */
+      div, p, span, img, section, article, .blurred-page, [class*="blurred"], [class*="blur-"], [style*="filter: blur"] {
         filter: none !important;
         -webkit-filter: none !important;
         opacity: 1 !important;
       }
+
+      /* 2. Obliterate StuDocu Floating Banners and Paywalls */
+      [class*="PremiumBanner"],
+      [class*="BlobWrapper"],
+      [class*="previewBanner"],
+      [class*="isFloating"],
+      [class*="overflowWrapper"],
+      [class*="blobContainer"],
+      [class*="Shapes-module"],
       #paywall, #paywall-wrapper, .paywall, [class*="paywall"],
       [data-test-id*="paywall"], .banner-wrapper, [class*="banner"],
-      div[class*="viewer-banner"], div[id*="banner"], div[class*="upsell"] {
+      div[class*="viewer-banner"], div[id*="banner"], div[class*="upsell"], div[class*="Upsell"],
+      #premium-page-header {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
         pointer-events: none !important;
+        position: absolute !important;
+        top: -9999px !important;
       }
+
+      /* 3. Re-enable user text selection */
       body, * {
         user-select: auto !important;
         -webkit-user-select: auto !important;
+        pointer-events: auto !important;
       }
     `;
     document.head.appendChild(style);
 
-    // Gỡ bỏ inline filters
-    document.querySelectorAll('*').forEach(el => {
-      if (el.style && el.style.filter && el.style.filter.includes('blur')) {
-        el.style.filter = 'none';
-      }
-    });
-
-    // Xóa các phần tử banner/paywall trong DOM
-    const removeSelectors = [
-      "#paywall-wrapper",
-      ".paywall-wrapper",
-      "[class*='paywall']",
-      "[data-test-id*='paywall']",
-      ".banner-wrapper"
-    ];
-    removeSelectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => el.remove());
-    });
+    // Initial pass of deletion
+    removeStudocuBanners();
   }
 
   function scrollAllStudocuPages(onComplete) {
-    const pageContainers = Array.from(document.querySelectorAll("[data-page-no], .page-container, [class*='page_wrapper'], [class*='Page_page']"));
+    const pageContainers = Array.from(document.querySelectorAll("[data-page-no], .page-container, .pf, [class*='page_wrapper'], [class*='Page_page']"));
     const totalPages = pageContainers.length || Math.max(1, Math.floor(document.documentElement.scrollHeight / window.innerHeight));
     let currentStep = 0;
 
     const scrollStep = () => {
+      removeStudocuBanners();
+
       if (currentStep >= pageContainers.length && pageContainers.length > 0) {
         window.scrollTo(0, 0);
         onComplete();
@@ -302,10 +391,9 @@
         pageContainers[currentStep].scrollIntoView({ behavior: "smooth", block: "center" });
         currentStep++;
         const percent = Math.min(100, Math.round((currentStep / totalPages) * 100));
-        updateProgressOverlay(`Đang nạp trang ${currentStep} / ${totalPages}...`, percent);
-        setTimeout(scrollStep, 300);
+        updateProgressOverlay(`Đang mở khóa trang ${currentStep} / ${totalPages}...`, percent);
+        setTimeout(scrollStep, 350);
       } else {
-        // Fallback: window scroll by viewports
         const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
         const currentScroll = window.scrollY;
         if (currentScroll >= maxScroll) {
@@ -313,10 +401,10 @@
           onComplete();
           return;
         }
-        window.scrollBy(0, window.innerHeight * 0.8);
+        window.scrollBy(0, window.innerHeight * 0.85);
         const percent = Math.min(99, Math.round((window.scrollY / maxScroll) * 100));
         updateProgressOverlay(`Đang nạp trang... (${percent}%)`, percent);
-        setTimeout(scrollStep, 300);
+        setTimeout(scrollStep, 350);
       }
     };
 
@@ -335,20 +423,26 @@
           background: #ffffff !important;
           margin: 0 !important;
           padding: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
         }
-        #document-wrapper, .document-container, .page-container {
+        #document-wrapper, .document-wrapper, [class*="DocumentViewer"], [class*="document-wrapper"] {
           width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
         }
-        .page-container, [data-page-no], [class*="Page_page"] {
+        .page-container, [data-page-no], .pf, [class*="Page_page"], [class*="page_wrapper"] {
           page-break-after: always !important;
           break-after: page !important;
           box-shadow: none !important;
           border: none !important;
           margin: 0 auto !important;
+          width: 100% !important;
         }
         nav, header, footer, aside, .sidebar, #sidebar, [class*="sidebar"],
+        [class*="PremiumBanner"], [class*="BlobWrapper"], [class*="previewBanner"],
+        [class*="isFloating"], [class*="overflowWrapper"], [class*="blobContainer"],
+        [class*="Shapes"], [class*="paywall"],
         #snap-doc-floating-btn, #snap-doc-overlay {
           display: none !important;
         }

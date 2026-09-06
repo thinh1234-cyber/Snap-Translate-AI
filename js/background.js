@@ -94,7 +94,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
           });
         }
-      } else if (url.includes("studocu.com")) {
+      } else if (url.includes("studocu.com") || url.includes("studocu.vn")) {
         chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_DOC_DOWNLOAD" }, () => {
           sendResponse({ success: true });
         });

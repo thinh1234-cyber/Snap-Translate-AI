@@ -41,7 +41,9 @@
     {
       "matches": [
         "*://*.scribd.com/*",
-        "*://*.studocu.com/*"
+        "*://*.studocu.com/*",
+        "*://*.studocu.vn/*",
+        "*://studocu.vn/*"
       ],
       "js": ["js/doc-inject.js"],
       "run_at": "document_end"
