@@ -7,20 +7,20 @@ echo   Snap Decode Backend Server Launcher
 echo   URL: http://127.0.0.1:8765
 echo =======================================================
 
-REM 1. Check for standalone portable executable (Clean Windows - Zero Dependency)
+REM 1. Run using system Python (Latest source code & models)
+python --version >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo [*] Running with System Python...
+    cd /d "%~dp0backend"
+    python server.py
+    goto finish
+)
+
+REM 2. Fallback: Standalone portable executable (Clean Windows - Zero Dependency)
 if exist "%~dp0backend\dist\snap_backend\snap_backend.exe" (
     echo [*] Launching Portable Standalone Backend...
     echo [*] (No system Python required)
     "%~dp0backend\dist\snap_backend\snap_backend.exe"
-    goto finish
-)
-
-REM 2. Fallback: Run using system Python
-python --version >nul 2>&1
-if %ERRORLEVEL% equ 0 (
-    echo [*] Standalone build not found. Running with System Python...
-    cd /d "%~dp0backend"
-    python server.py
     goto finish
 )
 
