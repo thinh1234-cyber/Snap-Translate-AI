@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════
 // PROVIDERS/SLIDESHARE.JS — SlideShare Downloader & PDF Engine
 // Tự động thu thập toàn bộ slide độ nét cao (HD 2048px/1024px),
-// cơ chế sinh URL xác thực theo prefix chuẩn (không bị nhầm slide,
-// không bị mờ, không bị mất trang do ảo hóa DOM), chống lỗi CORS,
-// tự động căn chỉnh khổ ngang A4 Landscape chuẩn in ấn.
+// cơ chế 3 tầng: Next.js Store -> slidesharedownloader.top API -> DOM Fallback,
+// chống nhầm slide gợi ý, tự động chuyển độ phân giải an toàn (fallback ladder),
+// căn chỉnh chuẩn khổ giấy A4 Ngang/Dọc cho in ấn & lưu PDF sắc nét 100%.
 // ═══════════════════════════════════════════════════════════
 
 (() => {
@@ -19,7 +19,11 @@
     },
 
     // ── Document Title ────────────────────────────────────────
-    getTitle() {
+    getTitle(defaultTitle = "") {
+      if (defaultTitle && defaultTitle.trim() && defaultTitle.trim().toLowerCase() !== "slideshare") {
+        return defaultTitle.trim();
+      }
+
       const ogTitle = document.querySelector('meta[property="og:title"]')?.content;
       if (ogTitle && ogTitle.trim().toLowerCase() !== "slideshare") {
         return ogTitle.trim();
@@ -38,200 +42,220 @@
       return cleanDocTitle || "SlideShare_Presentation";
     },
 
-    // ── Detect Total Slides from Metadata or DOM ──────────────
-    detectTotalPages() {
-      // 1. Kiểm tra JSON-LD metadata
+    // ── Tầng 1: Trích xuất trực tiếp từ Next.js Store (__NEXT_DATA__) ──
+    extractFromNextData() {
+      try {
+        const nextDataEl = document.getElementById("__NEXT_DATA__");
+        if (!nextDataEl || !nextDataEl.textContent) return null;
+
+        const data = JSON.parse(nextDataEl.textContent);
+        const ss = data?.props?.pageProps?.slideshow;
+        if (!ss) return null;
+
+        const totalSlides = ss.totalSlides || ss.total_slides || ss.page_count;
+        if (!totalSlides || totalSlides <= 0) return null;
+
+        const title = ss.title || ss.strippedTitle || "";
+        const dimensions = ss.slideDimensions || null;
+        const slidesInfo = ss.slides;
+
+        if (slidesInfo && slidesInfo.imageLocation && Array.isArray(slidesInfo.imageSizes)) {
+          const host = slidesInfo.host || "https://image.slidesharecdn.com";
+          const loc = slidesInfo.imageLocation;
+          const sTitle = slidesInfo.title;
+
+          // Sắp xếp các độ phân giải từ lớn nhất đến nhỏ nhất (2048 -> 1024 -> 638 -> 320)
+          const sortedSizes = [...slidesInfo.imageSizes].sort((a, b) => (b.width || 0) - (a.width || 0));
+
+          const slideCandidates = [];
+          for (let i = 1; i <= totalSlides; i++) {
+            const cands = sortedSizes.map(size => {
+              return `${host}/${loc}/${size.quality}/${sTitle}-${i}-${size.width}.jpg`;
+            });
+            slideCandidates.push(cands);
+          }
+
+          return {
+            source: "__NEXT_DATA__",
+            title,
+            totalSlides,
+            dimensions,
+            slideCandidates
+          };
+        }
+      } catch (e) {
+        console.warn("[SnapDoc] Next.js Store parse error:", e);
+      }
+      return null;
+    },
+
+    // ── Tầng 2: Gọi API dự phòng (slidesharedownloader.top / slidesvapi) ──
+    async extractFromApiFallback() {
+      const cleanUrl = window.location.href.split("?")[0].replace(/\/+$/, "");
+      const endpoints = [
+        "https://api.slidesharedownloader.top/",
+        "https://slidesvapi.vercel.app/"
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              slideshareUrl: cleanUrl,
+              downloadFormat: "pdf",
+              quality: "hd"
+            })
+          });
+
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.images) && data.images.length > 0) {
+            const totalSlides = data.totalSlides || data.images.length;
+            const slideCandidates = data.images.map(imgUrl => [imgUrl]);
+            return {
+              source: "API_FALLBACK",
+              title: data.title || "",
+              totalSlides,
+              dimensions: null,
+              slideCandidates
+            };
+          }
+        } catch (e) {
+          console.warn(`[SnapDoc] API fallback error on ${ep}:`, e);
+        }
+      }
+      return null;
+    },
+
+    // ── Tầng 3: Quét DOM dự phòng (Chỉ nhận diện ảnh slide thật, loại bỏ thumbnail) ──
+    extractFromDOMFallback() {
+      // Tìm số lượng trang từ JSON-LD
+      let totalSlides = 0;
       const ldScripts = document.querySelectorAll('script[type="application/ld+json"]');
       for (const s of ldScripts) {
         try {
           const data = JSON.parse(s.textContent);
           const count = data.numberOfPages || data.pageCount;
-          if (count && Number(count) > 0) return Number(count);
+          if (count && Number(count) > 0) {
+            totalSlides = Number(count);
+            break;
+          }
         } catch (e) {}
       }
 
-      // 2. Kiểm tra __NEXT_DATA__ (SlideShare Next.js data store)
-      try {
-        const nextData = window.__NEXT_DATA__;
-        if (nextData && nextData.props && nextData.props.pageProps) {
-          const ss = nextData.props.pageProps.slideshow;
-          if (ss) {
-            const count = ss.total_slides || ss.page_count || ss.slides_count || (ss.slides && ss.slides.length);
-            if (count && Number(count) > 0) return Number(count);
+      if (!totalSlides) {
+        const totalEl = document.querySelector('[data-testid="total-slides"]');
+        if (totalEl) {
+          const num = parseInt(totalEl.textContent.replace(/\D+/g, ""), 10);
+          if (num > 0) totalSlides = num;
+        }
+      }
+
+      // Tìm ảnh slide thật trên trang (BẮT BUỘC host image.slidesharecdn.com, KHÔNG phải thumbnail)
+      const sampleImg = document.querySelector(
+        'img[data-testid="vertical-slide-image"], img[id*="slide-image-0"], section[data-testid*="slide"] img, .slide-preview-thumbnail-module img'
+      );
+
+      let pattern = null;
+      if (sampleImg) {
+        const candidates = [];
+        const srcset = sampleImg.getAttribute("srcset");
+        if (srcset) {
+          const parts = srcset.split(",");
+          for (const p of parts) {
+            const tokens = p.trim().split(/\s+/);
+            if (tokens.length > 0 && tokens[0].startsWith("http")) {
+              candidates.push(tokens[0].split("?")[0]);
+            }
           }
         }
-      } catch (e) {}
-
-      // 3. Kiểm tra DOM indicators (e.g. "1 of 14", "14 slides")
-      const totalEl = document.querySelector('[data-testid="total-slides"], [class*="total-slides"], [class*="totalPages"], [data-testid*="page-count"]');
-      if (totalEl) {
-        const num = parseInt(totalEl.textContent.replace(/\D+/g, ""), 10);
-        if (num > 0) return num;
-      }
-
-      // 4. Tìm kiếm chuỗi định dạng "X of Y" hoặc "Y slides" trong body
-      const textMatches = Array.from(document.querySelectorAll("span, p, div")).slice(0, 50);
-      for (const el of textMatches) {
-        const txt = el.textContent || "";
-        const m = txt.match(/\bof\s+(\d{1,4})\b/i) || txt.match(/\b(\d{1,4})\s+slides?\b/i);
-        if (m) {
-          const num = parseInt(m[1], 10);
-          if (num > 0 && num < 1000) return num;
+        if (sampleImg.src && sampleImg.src.startsWith("http")) {
+          candidates.push(sampleImg.src.split("?")[0]);
         }
-      }
 
-      // 5. Fallback: đếm phần tử slide container trong DOM
-      const slideContainers = document.querySelectorAll('section[data-testid*="slide"], div[id*="slide-container"], [data-testid="vertical-slide-image"]');
-      return slideContainers.length || 0;
-    },
-
-    // ── Trích xuất mẫu URL chuẩn (Prefix + Độ phân giải + Đuôi file) ──
-    parseSlidePattern(img) {
-      if (!img) return null;
-
-      const srcset = img.getAttribute("srcset");
-      const candidates = [];
-
-      if (srcset) {
-        const parts = srcset.split(",");
-        for (const p of parts) {
-          const tokens = p.trim().split(/\s+/);
-          if (tokens.length > 0 && tokens[0].startsWith("http")) {
-            const u = tokens[0].split("?")[0];
-            const w = tokens[1] ? parseInt(tokens[1].replace(/\D/g, ""), 10) : 0;
-            candidates.push({ url: u, width: w });
+        for (const u of candidates) {
+          if (!u.includes("image.slidesharecdn.com") || u.includes("ss_thumbnails") || u.includes("-thumbnail.jpg")) {
+            continue;
+          }
+          // Mẫu: https://image.slidesharecdn.com/<loc>/<quality>/<title>-<index>-<width>.jpg
+          const m = u.match(/^(https?:\/\/image\.slidesharecdn\.com\/[^\/]+\/(\d+)\/([^\/]+))-(\d+)-(\d+)\.(jpg|webp|png)$/i);
+          if (m) {
+            pattern = {
+              base: m[1],
+              quality: m[2],
+              title: m[3],
+              currentIdx: parseInt(m[4], 10),
+              width: m[5],
+              ext: m[6].toLowerCase()
+            };
+            break;
           }
         }
       }
 
-      const raw = img.getAttribute("data-full") || img.getAttribute("data-normal") || img.getAttribute("data-src") || img.currentSrc || img.src || "";
-      if (raw && raw.startsWith("http") && !raw.startsWith("data:")) {
-        candidates.push({ url: raw.split("?")[0], width: 0 });
-      }
-
-      if (candidates.length === 0) return null;
-
-      // Ưu tiên độ phân giải cao nhất thực tế có sẵn (2048w -> 1024w -> 638w)
-      candidates.sort((a, b) => b.width - a.width);
-
-      for (const cand of candidates) {
-        const u = cand.url;
-        // Mẫu SlideShare CDN chuẩn: .../Title-1-2048.jpg hoặc .../Title-1-1024.jpg
-        const m = u.match(/^(https?:\/\/[^"'\s]+)-(\d+)-(2048|1024|638)\.(jpg|webp|png)$/i);
-        if (m) {
-          return {
-            prefix: m[1],
-            slideNum: m[2],
-            quality: m[3],
-            ext: m[4].toLowerCase()
-          };
+      if (pattern && totalSlides > 0) {
+        const slideCandidates = [];
+        for (let i = 1; i <= totalSlides; i++) {
+          const cands = [
+            `${pattern.base.replace(`/${pattern.quality}/`, "/75/")}-${i}-2048.${pattern.ext}`,
+            `${pattern.base.replace(`/${pattern.quality}/`, "/85/")}-${i}-1024.${pattern.ext}`,
+            `${pattern.base.replace(`/${pattern.quality}/`, "/85/")}-${i}-638.${pattern.ext}`,
+            `${pattern.base}-${i}-${pattern.width}.${pattern.ext}`
+          ];
+          slideCandidates.push(cands);
         }
-        // Mẫu không có hậu tố kích thước: .../Title-1.jpg
-        const m2 = u.match(/^(https?:\/\/[^"'\s]+)-(\d+)\.(jpg|webp|png)$/i);
-        if (m2) {
-          return {
-            prefix: m2[1],
-            slideNum: m2[2],
-            quality: "",
-            ext: m2[3].toLowerCase()
-          };
-        }
+        return {
+          source: "DOM_PATTERN",
+          title: "",
+          totalSlides,
+          dimensions: null,
+          slideCandidates
+        };
       }
 
       return null;
     },
 
-    // ── Scan & Hydrate All Slides (Thuật toán xác định thông minh) ──
-    async scanAllSlideUrls(onProgress) {
-      let totalPages = this.detectTotalPages();
+    // ── Pipeline thu thập slide đa tầng ───────────────────────
+    async collectSlideData(onProgress) {
+      if (onProgress) onProgress(0, 0, 15, "Đang trích xuất dữ liệu gốc...");
 
-      // Bước 1: Tìm slide đầu tiên của tài liệu
-      const sampleSelector = 'img[data-testid="vertical-slide-image"], img[id*="slide-image-0"], img[id*="slide-image"], img[class*="SlideImage"], section[data-testid*="slide"] img, div[id*="slide-container"] img, img[srcset*="slidesharecdn.com"], img[src*="slidesharecdn.com"]';
-      let sampleImg = document.querySelector(sampleSelector);
-
-      // Nếu chưa có trong DOM, cuộn nhẹ một chút để SlideShare kích hoạt ảnh đầu tiên
-      if (!sampleImg) {
-        window.scrollBy(0, 350);
-        await new Promise(r => setTimeout(r, 250));
-        sampleImg = document.querySelector(sampleSelector);
+      // Tầng 1: Next.js Store
+      let result = this.extractFromNextData();
+      if (result) {
+        console.log("[SnapDoc] Thu thập thành công qua Next.js Store:", result);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide độ nét cao!`);
+        return result;
       }
 
-      let parsedPattern = null;
-      if (sampleImg) {
-        parsedPattern = this.parseSlidePattern(sampleImg);
+      // Tầng 2: Gọi API ngoài
+      if (onProgress) onProgress(0, 0, 25, "Đang kết nối API phân giải slide...");
+      result = await this.extractFromApiFallback();
+      if (result) {
+        console.log("[SnapDoc] Thu thập thành công qua API Fallback:", result);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide qua API!`);
+        return result;
       }
 
-      // Nếu vẫn chưa nhận diện được từ slide đầu, quét tất cả ảnh cdn trên trang
-      if (!parsedPattern) {
-        const allImgs = Array.from(document.querySelectorAll('img[srcset*="slidesharecdn.com"], img[src*="slidesharecdn.com"]'));
-        for (const img of allImgs) {
-          parsedPattern = this.parseSlidePattern(img);
-          if (parsedPattern) break;
-        }
+      // Tầng 3: DOM Fallback
+      if (onProgress) onProgress(0, 0, 35, "Đang phân tích cấu trúc trang DOM...");
+      result = this.extractFromDOMFallback();
+      if (result) {
+        console.log("[SnapDoc] Thu thập thành công qua DOM Pattern:", result);
+        if (onProgress) onProgress(result.totalSlides, result.totalSlides, 45, `Tìm thấy ${result.totalSlides} slide qua DOM!`);
+        return result;
       }
 
-      // Khôi phục lại vị trí cuộn
-      window.scrollTo(0, 0);
-
-      console.log("[SnapDoc] SlideShare Pattern nhận diện được:", parsedPattern, "Tổng số slide:", totalPages);
-
-      // NẾU NHẬN DIỆN ĐƯỢC PATTERN VÀ TỔNG SỐ SLIDE:
-      // Tự động sinh danh sách 100% chính xác tuyệt đối từ 1 đến N (không bao giờ nhầm sang tài liệu khác, không bị mờ, không sót slide)
-      if (parsedPattern && totalPages > 0) {
-        const list = [];
-        const qualitySuffix = parsedPattern.quality ? `-${parsedPattern.quality}` : "";
-        for (let i = 1; i <= totalPages; i++) {
-          list.push(`${parsedPattern.prefix}-${i}${qualitySuffix}.${parsedPattern.ext}`);
-        }
-        if (onProgress) onProgress(totalPages, totalPages, 50);
-        return list;
-      }
-
-      // NẾU KHÔNG CÓ PATTERN: Sử dụng phương pháp quét DOM dự phòng
-      return await this.fallbackDOMScan(totalPages, onProgress);
+      return null;
     },
 
-    // ── Phương pháp quét DOM dự phòng ─────────────────────────
-    async fallbackDOMScan(totalPages, onProgress) {
-      const slideSelector = 'img[data-testid="vertical-slide-image"], img[class*="SlideImage"], .slide_image';
-      const originalScrollPos = window.pageYOffset || document.documentElement.scrollTop;
-      const finalUrls = [];
-      const seen = new Set();
-
-      const maxScrolls = Math.max(10, Math.min(40, totalPages || 25));
-      for (let i = 0; i < maxScrolls; i++) {
-        window.scrollBy(0, 800);
-        await new Promise(r => setTimeout(r, 180));
-
-        document.querySelectorAll(slideSelector).forEach(img => {
-          // Lấy URL từ srcset hoặc src
-          const srcset = img.getAttribute("srcset");
-          let best = "";
-          if (srcset) {
-            const parts = srcset.split(",").map(p => p.trim().split(/\s+/)[0]);
-            best = parts[parts.length - 1];
-          }
-          if (!best) best = img.src || img.getAttribute("data-full");
-
-          if (best && best.startsWith("http") && !seen.has(best)) {
-            seen.add(best);
-            finalUrls.push(best);
-          }
-        });
-
-        if (totalPages > 0 && finalUrls.length >= totalPages) break;
-        if (onProgress) {
-          const pct = Math.min(50, Math.round(((i + 1) / maxScrolls) * 50));
-          onProgress(finalUrls.length, totalPages || finalUrls.length, pct);
-        }
-      }
-
-      window.scrollTo(0, originalScrollPos);
-      return finalUrls;
-    },
-
-    // ── Autoscale Engine (Khổ Ngang A4 Landscape 16:9 / 4:3) ──
-    applyAutoscale(container, modalUI) {
+    // ── Autoscale Engine (Khổ Ngang / Khổ Dọc Chuẩn In Ấn) ────
+    applyAutoscale(container, modalUI, slideDims = null) {
       const firstPf = container.querySelector(".pf");
       let origW = 0;
       let origH = 0;
@@ -240,34 +264,42 @@
       if (firstImg && firstImg.naturalWidth && firstImg.naturalHeight) {
         origW = firstImg.naturalWidth;
         origH = firstImg.naturalHeight;
+      } else if (slideDims && slideDims.width && slideDims.height) {
+        origW = slideDims.width;
+        origH = slideDims.height;
       }
 
-      // Kích thước mặc định nếu ảnh đang nạp: 16:9 (1024 x 576 hoặc 2048 x 1152)
+      // Kích thước mặc định an toàn nếu chưa có kích thước thực
       if (!origW || origW <= 0) origW = 1024;
       if (!origH || origH <= 0) origH = 576;
 
       const isLandscape = origW >= origH;
 
-      // Tiêu chuẩn in ấn A4 (pixels 96 DPI): 1122.5 x 793.7
-      const targetW = isLandscape ? 1122.5 : 793.7;
-      const targetH = isLandscape ? 793.7 : 1122.5;
+      // Tiêu chuẩn in ấn A4 (pixels 96 DPI):
+      // Landscape: 1122.5 x 793.7 | Portrait: 793.7 x 1122.5
+      const printW = isLandscape ? 1122.5 : 793.7;
+      const printH = isLandscape ? 793.7 : 1122.5;
 
-      const scaleX = targetW / origW;
-      const scaleY = targetH / origH;
-      let scaleFactor = Math.min(scaleX, scaleY) * 0.985;
-      scaleFactor = Math.round(scaleFactor * 10000) / 10000;
+      const scaleX = printW / origW;
+      const scaleY = printH / origH;
+      let printScale = Math.min(scaleX, scaleY) * 0.99;
+      printScale = Math.round(printScale * 10000) / 10000;
 
-      // Căn chỉnh tỉ lệ cho tất cả khung chứa slide
+      // Tính kích thước hiển thị vừa vặn trên màn hình máy tính (Preview UI)
+      const maxScreenW = Math.min(window.innerWidth * 0.9, isLandscape ? 1040 : 760);
+      const previewScale = Math.min(1, maxScreenW / origW);
+      const displayW = Math.round(origW * previewScale);
+      const displayH = Math.round(origH * previewScale);
+
+      // Căn chỉnh cho tất cả container slide trên màn hình
       const allPfs = container.querySelectorAll(".pf");
       allPfs.forEach(pf => {
-        pf.style.setProperty("width", `${origW}px`, "important");
-        pf.style.setProperty("height", `${origH}px`, "important");
+        pf.style.setProperty("width", `${displayW}px`, "important");
+        pf.style.setProperty("height", `${displayH}px`, "important");
         pf.style.setProperty("aspect-ratio", `${origW} / ${origH}`, "important");
-        pf.style.setProperty("zoom", scaleFactor.toString(), "important");
-        pf.style.setProperty("margin", "0 auto", "important");
       });
 
-      // Cập nhật stylesheet in ấn
+      // Cập nhật stylesheet in ấn động
       const prevDynamic = document.getElementById("snap-slideshare-autoscale-style");
       if (prevDynamic) prevDynamic.remove();
 
@@ -280,10 +312,15 @@
             margin: 0mm;
           }
           #snap-slideshare-modal .snap-modal-pages .pf {
-            zoom: ${scaleFactor} !important;
+            width: ${printW}px !important;
+            height: ${printH}px !important;
+            max-width: none !important;
+            max-height: none !important;
+            aspect-ratio: ${origW} / ${origH} !important;
             margin: 0 auto !important;
             box-shadow: none !important;
             border: none !important;
+            border-radius: 0 !important;
             page-break-after: always !important;
             break-after: page !important;
             display: flex !important;
@@ -293,16 +330,19 @@
             page-break-after: auto !important;
             break-after: auto !important;
           }
-        }
-        #snap-slideshare-modal .snap-modal-pages .pf {
-          zoom: ${scaleFactor} !important;
+          #snap-slideshare-modal .snap-modal-pages .pf img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            display: block !important;
+          }
         }
       `;
       document.head.appendChild(dynamicStyle);
 
       // Cập nhật nhãn nút in
       if (modalUI && modalUI.printBtn) {
-        const pct = Math.round(scaleFactor * 100);
+        const pct = Math.round(printScale * 100);
         const oriLabel = isLandscape ? "Khổ Ngang" : "Khổ Dọc";
         modalUI.printBtn.textContent = `🖨️ In / Lưu PDF (${oriLabel} • Fit ${pct}%)`;
         modalUI.printBtn.disabled = false;
@@ -393,7 +433,7 @@
 
       const msg = document.createElement("div");
       msg.style.cssText = "font-size: 16px; font-weight: 500;";
-      msg.textContent = "Đang quét và thu thập toàn bộ slide độ nét cao...";
+      msg.textContent = "Đang chuẩn bị slide độ nét cao...";
 
       const track = document.createElement("div");
       track.className = "snap-bar-track";
@@ -576,10 +616,8 @@
           align-items: center !important;
           justify-content: center !important;
           overflow: hidden !important;
-          width: 100% !important;
-          max-width: 1024px !important;
-          aspect-ratio: 16 / 9 !important;
-          min-height: 180px !important;
+          margin: 0 auto !important;
+          border-radius: 4px !important;
         }
 
         #snap-slideshare-modal .snap-modal-pages .pf img {
@@ -615,80 +653,56 @@
 
     // ── Full Pipeline Execution ───────────────────────────────
     async generatePDF(UI) {
-      const title = this.getTitle();
-
       this.injectOverlayStyles();
-      const modalUI = this.createModal(title);
+      const modalUI = this.createModal("SlideShare Presentation");
       document.body.appendChild(modalUI.modal);
 
-      // Step 1: Quét và giải mã tất cả URL slide
-      modalUI.sub.textContent = "Đang xác thực mẫu slide chất lượng cao...";
-      const slideUrls = await this.scanAllSlideUrls((done, total, pct) => {
+      // Bước 1: Thu thập metadata & danh sách URL ứng cử viên của từng slide
+      const presentationData = await this.collectSlideData((done, total, pct, subText) => {
         modalUI.fill.style.width = `${pct}%`;
-        modalUI.sub.textContent = `Đang nạp slide ${done} / ${total}...`;
-        if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${done}/${total} slides`;
-        if (UI) UI.updateProgress(`Quét slide ${done} / ${total}`, pct);
+        modalUI.sub.textContent = subText || `Đang quét dữ liệu...`;
+        if (UI) UI.updateProgress(subText || `Quét dữ liệu`, pct);
       });
 
-      if (!slideUrls || slideUrls.length === 0) {
-        alert("SnapDoc: Không tìm thấy slide nào trên bài thuyết trình này. Hãy thử cuộn trang rồi bấm lại nhé!");
+      if (!presentationData || !presentationData.slideCandidates || presentationData.slideCandidates.length === 0) {
+        alert("SnapDoc: Không tìm thấy slide nào trên bài thuyết trình này. Hãy thử cuộn trang hoặc tải lại trang rồi thử lại nhé!");
         modalUI.modal.remove();
         return;
       }
 
-      const total = slideUrls.length;
+      const total = presentationData.totalSlides;
+      const cleanTitle = this.getTitle(presentationData.title);
+      modalUI.modal.querySelector(".snap-modal-title").textContent = cleanTitle;
+      modalUI.modal.querySelector(".snap-modal-title").setAttribute("title", cleanTitle);
       if (modalUI.pageBadge) modalUI.pageBadge.textContent = `0/${total} slides`;
 
-      // Step 2: Render các container slide
-      const imgElements = [];
-      slideUrls.forEach((url, idx) => {
-        const pf = document.createElement("div");
-        pf.className = "pf";
-        pf.setAttribute("data-slide-index", (idx + 1).toString());
+      // Căn chỉnh tỷ lệ sơ bộ dựa trên dimensions nếu có
+      if (presentationData.dimensions) {
+        this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
+      }
 
-        const img = document.createElement("img");
-        img.alt = `Slide ${idx + 1}`;
-        img.setAttribute("loading", "eager");
-        img.setAttribute("data-original-src", url);
-
-        // Fallback linh hoạt: 2048px -> 1024px -> 638px nếu bản cũ không có 2048px
-        img.addEventListener("error", function handleImgError() {
-          const cur = this.src || "";
-          if (cur.includes("-2048.jpg") || cur.includes("-2048.webp")) {
-            this.src = cur.replace("-2048.jpg", "-1024.jpg").replace("-2048.webp", "-1024.webp");
-          } else if (cur.includes("-1024.jpg") || cur.includes("-1024.webp")) {
-            this.src = cur.replace("-1024.jpg", "-638.jpg").replace("-1024.webp", "-638.webp");
-          } else {
-            console.warn(`[SnapDoc] Slide ${idx + 1} lỗi tải ảnh:`, cur);
-            onImageLoad();
-          }
-        });
-
-        img.src = url;
-
-        pf.appendChild(img);
-        modalUI.pages.appendChild(pf);
-        imgElements.push(img);
-      });
-
-      // Step 3: Đợi toàn bộ ảnh nạp xong vào bộ nhớ trình duyệt
+      // Bước 2: Tạo các khung chứa .pf và thẻ img có hỗ trợ Fallback Ladder
       let loadedCount = 0;
-      const onImageLoad = () => {
-        loadedCount++;
-        const pct = 50 + Math.round((loadedCount / total) * 50);
-        modalUI.fill.style.width = `${pct}%`;
-        modalUI.sub.textContent = `Đang nạp ảnh slide (${loadedCount} / ${total})...`;
-        if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${loadedCount}/${total} slides`;
+      let completedCount = 0;
 
-        if (loadedCount === 1) {
-          // Tính lại autoscale theo kích thước thực của slide đầu tiên
-          this.applyAutoscale(modalUI.pages, modalUI);
+      const onSlideLoaded = (isSuccess) => {
+        completedCount++;
+        if (isSuccess) loadedCount++;
+
+        const pct = 45 + Math.round((completedCount / total) * 55);
+        modalUI.fill.style.width = `${pct}%`;
+        modalUI.sub.textContent = `Đang nạp ảnh slide (${completedCount} / ${total})...`;
+        if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${completedCount}/${total} slides`;
+        if (UI) UI.updateProgress(`Nạp slide ${completedCount} / ${total}`, pct);
+
+        if (completedCount === 1) {
+          this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
         }
 
-        if (loadedCount >= total) {
+        if (completedCount >= total) {
           modalUI.sub.textContent = `✅ Đã sẵn sàng in ${total} slide!`;
           modalUI.loading.style.display = "none";
-          this.applyAutoscale(modalUI.pages, modalUI);
+          this.applyAutoscale(modalUI.pages, modalUI, presentationData.dimensions);
 
           // Tự động mở hộp thoại in sau nhịp nghỉ ngắn
           setTimeout(() => {
@@ -697,12 +711,55 @@
         }
       };
 
-      imgElements.forEach(img => {
-        if (img.complete && img.naturalWidth > 0) {
-          onImageLoad();
-        } else {
-          img.addEventListener("load", onImageLoad, { once: true });
-        }
+      presentationData.slideCandidates.forEach((candidates, idx) => {
+        const pf = document.createElement("div");
+        pf.className = "pf";
+        pf.setAttribute("data-slide-index", (idx + 1).toString());
+
+        const img = document.createElement("img");
+        img.alt = `Slide ${idx + 1}`;
+        img.setAttribute("loading", "eager");
+
+        // Lưu danh sách candidates và chỉ số hiện tại
+        img.__candidates = candidates;
+        img.__candidateIdx = 0;
+        let isSettled = false;
+
+        const settleOnce = (success) => {
+          if (isSettled) return;
+          isSettled = true;
+          onSlideLoaded(success);
+        };
+
+        // Fallback ladder: Thử độ phân giải 2048px trước, nếu 404 thì tự động xuống 1024px, 638px...
+        img.addEventListener("error", function handleImgError() {
+          this.__candidateIdx++;
+          if (this.__candidateIdx < this.__candidates.length) {
+            this.src = this.__candidates[this.__candidateIdx];
+          } else {
+            console.warn(`[SnapDoc] Slide ${idx + 1} không thể tải từ bất kỳ URL nào:`, this.__candidates);
+            settleOnce(false);
+          }
+        });
+
+        img.addEventListener("load", function handleImgLoad() {
+          if (this.naturalWidth > 0) {
+            settleOnce(true);
+          }
+        });
+
+        // Set URL đầu tiên (độ phân giải cao nhất)
+        img.src = candidates[0];
+
+        // Liveness timeout 15s cho từng slide để không bao giờ bị treo vĩnh viễn
+        setTimeout(() => {
+          if (!isSettled) {
+            settleOnce(img.naturalWidth > 0);
+          }
+        }, 15000);
+
+        pf.appendChild(img);
+        modalUI.pages.appendChild(pf);
       });
     }
   };
