@@ -1,5 +1,5 @@
 """
-Snap Decode — Dual-Engine Backend (Native Messaging On-Demand & HTTP Standalone)
+Snap Decode — Lightweight QR & Barcode Engine (Native Messaging On-Demand & HTTP Standalone)
 Auto-launched by Chrome Native Messaging or run standalone on localhost:8765.
 """
 
@@ -15,24 +15,9 @@ import numpy as np
 from PIL import Image
 
 from qr_engine import QREngine
-from ocr_engine import OCREngine
-# Setup DLL directories for Windows when packaged with PyInstaller
-if getattr(sys, "frozen", False):
-    app_dir = os.path.dirname(sys.executable)
-    internal_dir = os.path.join(app_dir, "_internal")
-    paddle_libs = os.path.join(internal_dir, "paddle", "libs")
-    for p in [app_dir, internal_dir, paddle_libs]:
-        if os.path.exists(p):
-            os.environ["PATH"] = p + ";" + os.environ.get("PATH", "")
-            if hasattr(os, "add_dll_directory"):
-                try:
-                    os.add_dll_directory(p)
-                except Exception:
-                    pass
 
 # Initialize vision engines (shared instance)
 qr_engine = QREngine()
-ocr_engine = OCREngine()
 
 
 def decode_base64_image(b64_str: str) -> np.ndarray:
@@ -49,7 +34,6 @@ def decode_base64_image(b64_str: str) -> np.ndarray:
 
 def process_decode(mode: str, image_b64: str) -> dict:
     """Core decoding logic shared by both Native Messaging and HTTP API."""
-    mode = (mode or "ocr").lower().strip()
     if not image_b64:
         return {"success": False, "error": "No image data provided"}
 
@@ -60,64 +44,27 @@ def process_decode(mode: str, image_b64: str) -> dict:
 
     h, w = img_bgr.shape[:2]
 
-    # Mode 1: QR Code
-    if mode == "qr":
-        t0 = time.time()
-        qr_text = qr_engine.decode(img_bgr)
-        elapsed_ms = round((time.time() - t0) * 1000, 1)
+    # QR & Barcode decoding
+    t0 = time.time()
+    qr_text = qr_engine.decode(img_bgr)
+    elapsed_ms = round((time.time() - t0) * 1000, 1)
 
-        if qr_text:
-            return {
-                "success": True,
-                "mode": "qr",
-                "text": qr_text,
-                "dimensions": {"width": w, "height": h},
-                "elapsedMs": elapsed_ms
-            }
-        else:
-            return {
-                "success": False,
-                "mode": "qr",
-                "error": "Không tìm thấy mã QR nào trong vùng chụp! Hãy căn chỉnh sát mã QR hơn.",
-                "dimensions": {"width": w, "height": h},
-                "elapsedMs": elapsed_ms
-            }
-
-    # Mode 2: OCR
-    elif mode == "ocr":
-        t0 = time.time()
-        res = ocr_engine.extract_text(img_bgr)
-        elapsed_ms = round((time.time() - t0) * 1000, 1)
-
-        if not res.get("success"):
-            return {
-                "success": False,
-                "mode": "ocr",
-                "error": res.get("error", "Lỗi nhận diện OCR"),
-                "elapsedMs": elapsed_ms
-            }
-
-        extracted_text = res.get("text", "").strip()
-        if not extracted_text:
-            return {
-                "success": False,
-                "mode": "ocr",
-                "error": "OCR không nhận diện được chữ nào trong vùng ảnh!",
-                "dimensions": {"width": w, "height": h},
-                "elapsedMs": elapsed_ms
-            }
-
+    if qr_text:
         return {
             "success": True,
-            "mode": "ocr",
-            "text": extracted_text,
-            "lines": res.get("lines", []),
-            "confidence": res.get("confidence", 0.0),
+            "mode": "qr",
+            "text": qr_text,
             "dimensions": {"width": w, "height": h},
             "elapsedMs": elapsed_ms
         }
-
-    return {"success": False, "error": f"Invalid mode: '{mode}'"}
+    else:
+        return {
+            "success": False,
+            "mode": "qr",
+            "error": "Không tìm thấy mã QR nào trong vùng chụp! Hãy căn chỉnh sát mã QR hơn.",
+            "dimensions": {"width": w, "height": h},
+            "elapsedMs": elapsed_ms
+        }
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -130,7 +77,6 @@ def run_native_messaging():
     Runs silently in background, processes requests from Chrome, and exits
     when Chrome disconnects or closes the stdin pipe.
     """
-    # Windows binary mode for standard streams
     if sys.platform == "win32":
         import msvcrt
         msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
@@ -151,7 +97,7 @@ def run_native_messaging():
             raw_msg = sys.stdin.buffer.read(msg_len).decode("utf-8")
             req_data = json.loads(raw_msg)
 
-            mode = req_data.get("mode", "ocr")
+            mode = req_data.get("mode", "qr")
             image_b64 = req_data.get("image", "")
 
             result = process_decode(mode, image_b64)
@@ -177,14 +123,14 @@ def run_native_messaging():
 
 def create_fastapi_app():
     import uvicorn
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
 
     app = FastAPI(
         title="Snap Decode Backend",
-        description="High-performance Local Backend for QR Decoding and OCR",
-        version="2.1.0"
+        description="Lightweight QR & Barcode Decoder Engine",
+        version="2.2.0"
     )
 
     app.add_middleware(
@@ -196,7 +142,7 @@ def create_fastapi_app():
     )
 
     class DecodeRequest(BaseModel):
-        mode: str
+        mode: str = "qr"
         image: str
 
     @app.get("/health")
@@ -204,7 +150,7 @@ def create_fastapi_app():
         return {
             "status": "online",
             "service": "Snap Decode Backend",
-            "version": "2.1.0",
+            "version": "2.2.0",
             "timestamp": time.time()
         }
 
@@ -217,7 +163,6 @@ def create_fastapi_app():
 
 
 if __name__ == "__main__":
-    # Check if launched by Chrome Native Messaging
     is_native = (
         "--native" in sys.argv or
         any(arg.startswith("chrome-extension://") for arg in sys.argv[1:])

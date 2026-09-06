@@ -2,7 +2,7 @@
 // SNAP-CONTROLLER.JS — Quản lý chụp vùng màn hình (Lazy-load & Smart Ping)
 // ═══════════════════════════════════════════════════════════
 
-export async function startSnap(tab, mode = "ocr") {
+export async function startSnap(tab, mode = "qr") {
   if (!tab || !tab.id) return;
 
   if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("chrome-extension://"))) {
@@ -54,10 +54,10 @@ async function injectAndStartSnap(tab, mode) {
 
 export function registerCommandListener() {
   chrome.commands.onCommand.addListener((command) => {
-    if (command === "snap-region" || command === "snap-ocr") {
+    if (command === "snap-region" || command === "snap-qr") {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
-          startSnap(tabs[0], "ocr");
+          startSnap(tabs[0], "qr");
         }
       });
     }

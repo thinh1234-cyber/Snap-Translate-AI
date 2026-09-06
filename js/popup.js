@@ -56,17 +56,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  const ocrBtn = document.getElementById("snap-ocr-btn");
-  if (ocrBtn) {
-    ocrBtn.addEventListener("click", () => {
-      executeSnap("ocr");
-    });
-  }
-
   const qrBtn = document.getElementById("snap-qr-btn");
   if (qrBtn) {
     qrBtn.addEventListener("click", () => {
       executeSnap("qr");
+    });
+  }
+
+  const docsBtn = document.getElementById("docs-download-btn");
+  if (docsBtn) {
+    docsBtn.addEventListener("click", () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "TRIGGER_DOC_DOWNLOAD" }, (resp) => {
+            if (chrome.runtime.lastError || !resp) {
+              alert("Hãy mở trang Scribd hoặc Studocu trước khi bấm Tải tài liệu!");
+            }
+          });
+        }
+      });
     });
   }
 
@@ -148,19 +156,19 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="snap-guide-container">
         <button class="snap-guide-close" id="snap-guide-close">✕</button>
         <div class="snap-guide-step" data-step="1">
-          <div class="snap-guide-icon">🔍</div>
-          <h3>Bước 1: Snap OCR Tách Chữ</h3>
-          <p>Nhấn <b>Alt+X</b> hoặc click nút Snap OCR, sau đó kéo chuột chọn vùng văn bản trên màn hình để trích xuất.</p>
+          <div class="snap-guide-icon">📷</div>
+          <h3>Bước 1: Snap Quét Mã QR</h3>
+          <p>Nhấn <b>Alt+X</b> hoặc click nút Snap Quét QR, sau đó kéo chuột chọn vùng chứa mã QR (hoặc VietQR ngân hàng) để giải mã tức thì.</p>
         </div>
         <div class="snap-guide-step" data-step="2" style="display:none;">
-          <div class="snap-guide-icon">📷</div>
-          <h3>Bước 2: Snap Quét Mã QR</h3>
-          <p>Chọn nút Snap Đọc QR, kéo chuột chọn vùng chứa mã QR. Nội dung link hoặc văn bản sẽ giải mã tức thì.</p>
+          <div class="snap-guide-icon">📄</div>
+          <h3>Bước 2: Mở Khóa Tài Liệu Scribd / StuDocu</h3>
+          <p>Khi ở trang tài liệu Scribd hoặc StuDocu bị khóa/làm mờ, click nút <b>Tải Tài Liệu</b> để tự động mở khóa và xuất file PDF sạch.</p>
         </div>
         <div class="snap-guide-step" data-step="3" style="display:none;">
           <div class="snap-guide-icon">📋</div>
           <h3>Bước 3: Copy, Xuất File & Xem Lịch Sử</h3>
-          <p>Nhấn <b>Copy</b> hoặc <b>Export .txt</b> ngay tại popup. Bạn có thể mở mục Cài đặt để xem lại toàn bộ lịch sử snap.</p>
+          <p>Nhấn <b>Copy</b> hoặc <b>Export .txt</b> ngay tại popup kết quả. Mở mục Cài đặt để quản lý lịch sử quét.</p>
         </div>
         <div class="snap-guide-nav">
           <button id="snap-guide-prev" style="visibility:hidden;">← Trước</button>

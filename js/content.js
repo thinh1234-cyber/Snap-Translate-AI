@@ -16,7 +16,7 @@
   let startX, startY;
   let isSnapping = false;
   let overlay, selectionBox;
-  let currentSnapMode = "ocr"; // "ocr" | "qr"
+  let currentSnapMode = "qr"; // "qr"
   let popup;
 
   // ── Message Listener ───────────────────────────────────────
@@ -27,7 +27,7 @@
     }
 
     if (request.action === "START_SNAP") {
-      currentSnapMode = request.mode === "qr" ? "qr" : "ocr";
+      currentSnapMode = "qr";
       initSnapOverlay();
       sendResponse({ status: "STARTED" });
       return true;
@@ -155,11 +155,7 @@
 
       // 2. Hiện popup loader sau khi đã chụp ảnh xong
       showPopupLoading();
-      updatePopupLoadingText(
-        currentSnapMode === "qr"
-          ? "Đang định vị & giải mã QR..."
-          : "Đang trích xuất ký tự OCR..."
-      );
+      updatePopupLoadingText("Đang định vị & giải mã QR Code...");
 
       // 3. Cắt ảnh và gửi sang Backend
       cropAndDispatchToBackend(response.dataUrl, rect);
@@ -299,11 +295,10 @@
     const content = document.getElementById("snap-decode-content");
     if (!content) return;
 
-    const isQR = mode === "qr";
-    const labelTitle = isQR ? "NỘI DUNG MÃ QR:" : "VĂN BẢN TRÍCH XUẤT (OCR):";
-    const modeBadge = isQR ? "📷 QR Code (OpenCV / ZBar)" : "🔍 OCR (RapidOCR ONNX)";
-    const badgeBg = isQR ? "rgba(15, 157, 88, 0.12)" : "rgba(26, 115, 232, 0.12)";
-    const badgeColor = isQR ? "var(--snap-success, #0f9d58)" : "var(--snap-primary, #1a73e8)";
+    const labelTitle = "NỘI DUNG MÃ QR:";
+    const modeBadge = "📷 QR Code (OpenCV / ZBar)";
+    const badgeBg = "rgba(15, 157, 88, 0.12)";
+    const badgeColor = "var(--snap-success, #0f9d58)";
 
     const charCount = decodedText.length;
     const wordCount = decodedText.split(/\s+/).filter(Boolean).length;

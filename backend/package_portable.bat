@@ -8,7 +8,7 @@ echo   This creates a self-contained runtime in:
 echo   backend\dist\snap_backend\
 echo =======================================================
 
-python -m PyInstaller --noconfirm --onedir --console --name snap_backend --distpath dist --workpath build --specpath . --collect-data rapidocr_onnxruntime --collect-binaries pyzbar --collect-all uvicorn --collect-all fastapi --hidden-import cv2 server.py
+python -m PyInstaller --noconfirm --onedir --console --name snap_backend --distpath dist --workpath build --specpath . --collect-binaries pyzbar --collect-all uvicorn --collect-all fastapi --hidden-import cv2 server.py
 
 if %ERRORLEVEL% equ 0 (
     echo.
