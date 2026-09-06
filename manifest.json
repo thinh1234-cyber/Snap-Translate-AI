@@ -45,7 +45,13 @@
         "*://*.studocu.vn/*",
         "*://studocu.vn/*"
       ],
-      "js": ["js/doc-inject.js"],
+      "js": [
+        "js/doc-unlocker/ui-overlay.js",
+        "js/doc-unlocker/providers/scribd.js",
+        "js/doc-unlocker/providers/studocu.js",
+        "js/doc-unlocker/index.js",
+        "js/doc-inject.js"
+      ],
       "run_at": "document_end"
     }
   ],
