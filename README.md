@@ -58,4 +58,31 @@ setup_auto_backend.bat
 ### 2. Tải Tài Liệu Scribd / StuDocu
 1. Mở trang tài liệu cần tải trên **Scribd** hoặc **StuDocu**.
 2. Bấm nút nổi **⚡ Tải PDF Sạch** ở góc dưới bên phải trang web (hoặc mở popup Extension bấm **Tải Tài Liệu**).
-3. Hệ thống sẽ tự động cuộn nạp toàn bộ các trang và mở hộp thoại in **"Save as PDF"** của trình duyệt.
+3. Hệ thống sẽ tự động cuộn nạp, giải mã toàn bộ các trang và hiển thị giao diện xem trước. Bấm **🖨️ In / Lưu PDF** để mở hộp thoại in.
+
+---
+
+## ⚙️ Cấu hình Chrome Print khi Lưu PDF (Chuẩn cho tất cả Web)
+
+Để bản in PDF xuất ra đẹp nhất, không bị viền trắng thừa, căn giữa chuẩn xác và hiển thị đầy đủ 100% hình ảnh / công thức, hãy thiết lập hộp thoại in của Chrome theo bảng chuẩn bên dưới:
+
+<div align="center">
+  <img src="assets/print_config_guide.png" alt="Cấu hình Chrome Print Chuẩn" width="620">
+</div>
+
+<br>
+
+| Mục thiết lập | Giá trị chọn | Giải thích & Tác dụng |
+|---|---|---|
+| **Destination** *(Máy in đích)* | **Save as PDF** | Xuất trực tiếp thành file tài liệu `.pdf`. |
+| **Pages** *(Trang)* | **All** | In toàn bộ các trang đã được mở khóa. |
+| **Layout** *(Bố cục)* | **Portrait** *(hoặc Landscape)* | Mặc định là **Khổ Dọc** (chọn `Landscape` nếu tài liệu là slide ngang). |
+| **Paper size** *(Khổ giấy)* | **A4** | Khổ giấy in tiêu chuẩn quốc tế. |
+| **Pages per sheet** | **1** | 1 trang tài liệu trên mỗi mặt giấy. |
+| **Margins** *(Lề)* | **None** *(Không có)* | Loại bỏ lề trắng thừa của trình duyệt, tài liệu căn giữa tràn viền hoàn hảo. |
+| **Scale** *(Tỷ lệ)* | **Default** *(Mặc định)* | Thuật toán AutoScale của SnapDoc đã tự động căn chỉnh tỷ lệ tối ưu cho tài liệu. |
+| **Options** *(Tùy chọn)* | ✅ **Background graphics** | **BẮT BUỘC TÍCH CHỌN** để Chrome in đầy đủ ảnh nền HD, màu chữ, công thức và đồ họa. |
+
+> [!TIP]
+> **Trình duyệt tự ghi nhớ:** Chrome sẽ tự động ghi nhớ các tùy chọn này cho những lần in sau, bạn chỉ cần chọn chuẩn một lần duy nhất!
+

@@ -46,6 +46,31 @@
 
       btn.addEventListener("click", onClick);
 
+      // Ensure print styles completely hide floating button across all websites
+      if (!document.getElementById("snap-doc-shared-print-style")) {
+        const pStyle = document.createElement("style");
+        pStyle.id = "snap-doc-shared-print-style";
+        pStyle.textContent = `
+          @media print {
+            #snap-doc-floating-btn,
+            #snap-doc-overlay {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+          }
+        `;
+        document.head.appendChild(pStyle);
+      }
+
+      window.addEventListener("beforeprint", () => {
+        btn.style.setProperty("display", "none", "important");
+      });
+      window.addEventListener("afterprint", () => {
+        btn.style.setProperty("display", "flex", "important");
+      });
+
       const appendBtn = () => {
         if (document.body && !document.getElementById("snap-doc-floating-btn")) {
           document.body.appendChild(btn);

@@ -30,7 +30,7 @@
       this.scrollAllPages(UI, () => {
         UI.updateProgress("Hoàn tất nạp!", 100);
         setTimeout(() => {
-          UI.hideProgress();
+          this.preparePrint();
           this.injectPrintStyles();
           window.print();
         }, 800);
@@ -47,7 +47,11 @@
         ".brand_header",
         ".sticky_header",
         "header",
-        "footer"
+        "footer",
+        ".global_header",
+        ".bottom_actions",
+        ".page_missing",
+        ".loading_page"
       ];
 
       selectorsToRemove.forEach(sel => {
@@ -63,6 +67,39 @@
 
       document.documentElement.style.overflow = "visible";
       document.body.style.overflow = "visible";
+    },
+
+    preparePrint() {
+      // 1. Remove UI overlays and floating action button to avoid blank page 1
+      const btn = document.getElementById("snap-doc-floating-btn");
+      if (btn) btn.remove();
+      const overlay = document.getElementById("snap-doc-overlay");
+      if (overlay) overlay.remove();
+
+      // 2. Remove all non-scroller elements from body
+      Array.from(document.body.children).forEach(el => {
+        if (!el.classList.contains("document_scroller") && el.tagName !== "SCRIPT" && el.tagName !== "STYLE") {
+          el.remove();
+        }
+      });
+
+      // 3. Remove all non-page elements inside document_scroller
+      const scroller = document.querySelector(".document_scroller");
+      if (scroller) {
+        Array.from(scroller.children).forEach(child => {
+          if (!child.classList.contains("outer_page")) {
+            child.remove();
+          }
+        });
+      }
+
+      // 4. Eliminate trailing blank page by resetting break on the last page
+      const pages = Array.from(document.querySelectorAll(".outer_page"));
+      if (pages.length > 0) {
+        const lastPage = pages[pages.length - 1];
+        lastPage.style.setProperty("page-break-after", "auto", "important");
+        lastPage.style.setProperty("break-after", "auto", "important");
+      }
     },
 
     scrollAllPages(UI, onComplete) {
@@ -96,33 +133,59 @@
       style.id = "snap-scribd-print-style";
       style.innerHTML = `
         @media print {
-          @page { size: auto; margin: 0; }
+          @page {
+            size: portrait;
+            margin: 0mm;
+          }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
             overflow: visible !important;
             height: auto !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body > *:not(.document_scroller) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           .document_scroller {
             overflow: visible !important;
             height: auto !important;
             position: static !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+          .document_scroller > *:not(.outer_page) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           .outer_page {
             page-break-after: always !important;
             break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             margin: 0 auto !important;
             box-shadow: none !important;
             border: none !important;
           }
-          .page_missing, .loading_page {
-            display: none !important;
+          .outer_page:last-child,
+          .outer_page:last-of-type {
+            page-break-after: auto !important;
+            break-after: auto !important;
           }
-          .toolbar_drop, .mobile_overlay, #between_page_ads, .between_page_ads,
-          .autogen_class_views_read_autogen_embed_toolbar,
+          .page_missing, .loading_page,
           #snap-doc-floating-btn, #snap-doc-overlay {
             display: none !important;
+            visibility: hidden !important;
           }
         }
       `;
