@@ -70,30 +70,28 @@
     },
 
     preparePrint() {
-      // 1. Remove UI overlays and floating action button to avoid blank page 1
+      // 1. Remove UI overlays and floating action button to eliminate blank page 1
       const btn = document.getElementById("snap-doc-floating-btn");
       if (btn) btn.remove();
       const overlay = document.getElementById("snap-doc-overlay");
       if (overlay) overlay.remove();
 
-      // 2. Remove all non-scroller elements from body
-      Array.from(document.body.children).forEach(el => {
-        if (!el.classList.contains("document_scroller") && el.tagName !== "SCRIPT" && el.tagName !== "STYLE") {
-          el.remove();
-        }
+      // 2. Remove known intrusive elements before printing
+      const garbageSelectors = [
+        ".toolbar_drop",
+        ".mobile_overlay",
+        "#between_page_ads",
+        ".between_page_ads",
+        ".autogen_class_views_read_autogen_embed_toolbar",
+        "#font_preload_bed",
+        ".page_missing",
+        ".loading_page"
+      ];
+      garbageSelectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => el.remove());
       });
 
-      // 3. Remove all non-page elements inside document_scroller
-      const scroller = document.querySelector(".document_scroller");
-      if (scroller) {
-        Array.from(scroller.children).forEach(child => {
-          if (!child.classList.contains("outer_page")) {
-            child.remove();
-          }
-        });
-      }
-
-      // 4. Eliminate trailing blank page by resetting break on the last page
+      // 3. Eliminate trailing blank page by resetting break on the last page
       const pages = Array.from(document.querySelectorAll(".outer_page"));
       if (pages.length > 0) {
         const lastPage = pages[pages.length - 1];
@@ -146,27 +144,16 @@
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          body > *:not(.document_scroller) {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .document_scroller {
+          .auto__embeds_new_show,
+          .document_scroller,
+          .document_container,
+          .outer_page_container {
             overflow: visible !important;
             height: auto !important;
             position: static !important;
             margin: 0 auto !important;
             padding: 0 !important;
             width: 100% !important;
-          }
-          .document_scroller > *:not(.outer_page) {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
           }
           .outer_page {
             page-break-after: always !important;
@@ -182,10 +169,21 @@
             page-break-after: auto !important;
             break-after: auto !important;
           }
-          .page_missing, .loading_page,
-          #snap-doc-floating-btn, #snap-doc-overlay {
+          .toolbar_drop,
+          .mobile_overlay,
+          #between_page_ads,
+          .between_page_ads,
+          .autogen_class_views_read_autogen_embed_toolbar,
+          #font_preload_bed,
+          .page_missing,
+          .loading_page,
+          #snap-doc-floating-btn,
+          #snap-doc-overlay {
             display: none !important;
             visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
         }
       `;
