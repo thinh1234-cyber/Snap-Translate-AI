@@ -16,6 +16,19 @@ from PIL import Image
 
 from qr_engine import QREngine
 from ocr_engine import OCREngine
+# Setup DLL directories for Windows when packaged with PyInstaller
+if getattr(sys, "frozen", False):
+    app_dir = os.path.dirname(sys.executable)
+    internal_dir = os.path.join(app_dir, "_internal")
+    paddle_libs = os.path.join(internal_dir, "paddle", "libs")
+    for p in [app_dir, internal_dir, paddle_libs]:
+        if os.path.exists(p):
+            os.environ["PATH"] = p + ";" + os.environ.get("PATH", "")
+            if hasattr(os, "add_dll_directory"):
+                try:
+                    os.add_dll_directory(p)
+                except Exception:
+                    pass
 
 # Initialize vision engines (shared instance)
 qr_engine = QREngine()

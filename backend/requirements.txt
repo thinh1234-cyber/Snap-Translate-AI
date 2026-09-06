@@ -5,3 +5,4 @@ pyzbar>=0.1.9
 rapidocr-onnxruntime>=1.3.0
 pillow>=10.0.0
 numpy>=1.24.0
+paddlepaddle>=3.0.0
