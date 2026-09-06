@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="snap-guide-step" data-step="2" style="display:none;">
           <div class="snap-guide-icon">📄</div>
           <h3>Bước 2: Mở Khóa Tài Liệu Scribd / StuDocu</h3>
-          <p>Khi ở trang tài liệu Scribd hoặc StuDocu bị khóa/làm mờ, click nút <b>Tải Tài Liệu</b> để tự động mở khóa và xuất file PDF sạch.</p>
+          <p>Khi ở trang tài liệu Scribd hoặc StuDocu bị khóa/làm mờ, click nút <b>Tải Tài Liệu</b> để tự động mở khóa và xuất file PDF.</p>
         </div>
         <div class="snap-guide-step" data-step="3" style="display:none;">
           <div class="snap-guide-icon">📋</div>

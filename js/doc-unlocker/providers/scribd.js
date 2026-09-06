@@ -36,7 +36,7 @@
           this.injectPrintStyles();
           UI.hideProgress();
           window.print();
-        }, 500);
+        }, 850);
       });
     },
 
@@ -86,7 +86,7 @@
         }
       }
 
-      // 2. Sequentially scroll each page into view to trigger Scribd viewport observers
+      // 2. Sequentially scroll each page into view with deliberate delays to trigger observers
       return new Promise(resolve => {
         let idx = 0;
 
@@ -99,7 +99,7 @@
 
           const el = pageElements[idx];
           if (el) {
-            el.scrollIntoView({ behavior: "instant", block: "center" });
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
             if (scroller && typeof scroller.scrollTop === "number") {
               scroller.scrollTop = el.offsetTop;
               scroller.dispatchEvent(new Event("scroll"));
@@ -107,16 +107,17 @@
           }
 
           idx++;
-          const pct = Math.round((idx / total) * 70);
-          if (onProgress) onProgress(`Đang cuộn nạp trang ${idx} / ${total}...`, pct);
+          const pct = Math.round((idx / total) * 65);
+          if (onProgress) onProgress(`Đang quét nạp trang ${idx} / ${total}...`, pct);
 
-          setTimeout(scrollNext, 350);
+          // Paced at 600ms per page so DOM & network hydration keeps up
+          setTimeout(scrollNext, 600);
         };
 
         // 3. Verification loop: ensures the last page and all images finish loading
         const verifyContentRendered = () => {
           let checks = 0;
-          const maxChecks = 25; // max 5 seconds
+          const maxChecks = 40; // max ~10 seconds for thorough network completion
 
           const checkInterval = setInterval(() => {
             checks++;
@@ -134,12 +135,12 @@
               return !hasInner && el.children.length <= 8;
             });
 
-            // Check if any images are still downloading
-            const pendingImages = Array.from(document.querySelectorAll(".outer_page img")).filter(img => !img.complete);
+            // Check if any images are still downloading or haven't decoded
+            const pendingImages = Array.from(document.querySelectorAll(".outer_page img")).filter(img => !img.complete || img.naturalWidth === 0);
 
-            const pct = 70 + Math.min(29, checks * 2);
+            const pct = 65 + Math.min(34, Math.round(checks * 0.9));
             if (onProgress) {
-              onProgress(`Đang nạp ảnh & nội dung (${total - pendingPages.length}/${total} trang)...`, pct);
+              onProgress(`Đang đợi nạp nội dung & ảnh (${total - pendingPages.length}/${total} trang)...`, pct);
             }
 
             if ((pendingPages.length === 0 && pendingImages.length === 0) || checks >= maxChecks) {
@@ -148,7 +149,7 @@
               if (scroller && typeof scroller.scrollTop === "number") scroller.scrollTop = 0;
               resolve();
             }
-          }, 200);
+          }, 250);
         };
 
         scrollNext();

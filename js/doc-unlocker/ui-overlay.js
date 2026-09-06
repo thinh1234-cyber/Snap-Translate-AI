@@ -12,7 +12,7 @@
       btn.id = "snap-doc-floating-btn";
       btn.innerHTML = `
         <span style="font-size: 16px;">⚡</span>
-        <span>Tải PDF Sạch</span>
+        <span>Tải PDF</span>
       `;
       btn.setAttribute("style", `
         position: fixed !important;

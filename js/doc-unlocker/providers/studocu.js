@@ -183,16 +183,16 @@
               stable = 0;
               lastLen = len;
             }
-            if (stable >= 2) {
+            if (stable >= 3) {
               resolve();
               return;
             }
           }
-          if (tries++ > 15) {
-            resolve(); // ~1.8s timeout cap per page for smooth operation
+          if (tries++ > 25) {
+            resolve(); // ~3s timeout cap per page for thorough hydration
             return;
           }
-          setTimeout(check, 100);
+          setTimeout(check, 120);
         };
         check();
       });
@@ -264,7 +264,7 @@
 
             i++;
             if (onProgress) onProgress(i, total);
-            next();
+            setTimeout(next, 100);
           });
         };
         next();
