@@ -407,35 +407,101 @@
       style.textContent = `
         #snap-studocu-modal {
           position: fixed !important;
-          inset: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
           z-index: 2147483647 !important;
-          background: #323639 !important;
-          overflow: auto !important;
+          background: #18191c !important;
+          overflow-x: hidden !important;
+          overflow-y: scroll !important;
+          -webkit-overflow-scrolling: touch !important;
+          overscroll-behavior: contain !important;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          outline: none !important;
+          box-sizing: border-box !important;
         }
+
+        /* ── Modern Custom Visible Scrollbar ── */
+        #snap-studocu-modal::-webkit-scrollbar {
+          width: 12px !important;
+          display: block !important;
+        }
+        #snap-studocu-modal::-webkit-scrollbar-track {
+          background: #18191c !important;
+          border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+        #snap-studocu-modal::-webkit-scrollbar-thumb {
+          background: #4e515d !important;
+          border-radius: 6px !important;
+          border: 3px solid #18191c !important;
+          min-height: 48px !important;
+        }
+        #snap-studocu-modal::-webkit-scrollbar-thumb:hover {
+          background: #1a73e8 !important;
+        }
+        #snap-studocu-modal::-webkit-scrollbar-thumb:active {
+          background: #1557b0 !important;
+        }
+
         #snap-studocu-modal .snap-modal-bar {
           position: sticky !important;
           top: 0 !important;
-          z-index: 100 !important;
+          z-index: 1000 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
           gap: 16px !important;
-          background: #1e1e24 !important;
+          background: rgba(24, 25, 28, 0.96) !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
           color: #ffffff !important;
-          padding: 12px 24px !important;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.5) !important;
+          padding: 10px 24px !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+        }
+        #snap-studocu-modal .snap-modal-title-group {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          min-width: 0 !important;
+          flex: 1 !important;
+        }
+        #snap-studocu-modal .snap-badge-logo {
+          background: linear-gradient(135deg, #ff6b35, #f7c59f) !important;
+          color: #1e1e24 !important;
+          font-weight: 800 !important;
+          font-size: 11px !important;
+          padding: 3px 8px !important;
+          border-radius: 6px !important;
+          letter-spacing: 0.5px !important;
+          text-transform: uppercase !important;
+          flex-shrink: 0 !important;
+        }
+        #snap-studocu-modal .snap-badge-count {
+          background: rgba(255, 255, 255, 0.12) !important;
+          color: #e0e0e0 !important;
+          font-weight: 600 !important;
+          font-size: 12px !important;
+          padding: 3px 10px !important;
+          border-radius: 12px !important;
+          flex-shrink: 0 !important;
         }
         #snap-studocu-modal .snap-modal-title {
-          font-size: 15px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           white-space: nowrap !important;
           overflow: hidden !important;
           text-overflow: ellipsis !important;
+          color: #f1f3f4 !important;
         }
         #snap-studocu-modal .snap-modal-actions {
           display: flex !important;
-          gap: 10px !important;
+          align-items: center !important;
+          gap: 12px !important;
           flex-shrink: 0 !important;
         }
         #snap-studocu-modal button {
@@ -445,21 +511,37 @@
           font-size: 13px !important;
           font-weight: 600 !important;
           cursor: pointer !important;
-          transition: all 0.2s ease !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         #snap-studocu-modal .snap-btn-print {
           background: #1a73e8 !important;
           color: #ffffff !important;
+          box-shadow: 0 2px 8px rgba(26, 115, 232, 0.4) !important;
         }
-        #snap-studocu-modal .snap-btn-print:hover {
+        #snap-studocu-modal .snap-btn-print:hover:not(:disabled) {
           background: #1557b0 !important;
+          box-shadow: 0 4px 14px rgba(26, 115, 232, 0.6) !important;
+          transform: translateY(-1px) !important;
+        }
+        #snap-studocu-modal .snap-btn-print:active:not(:disabled) {
+          transform: translateY(0) !important;
+        }
+        #snap-studocu-modal .snap-btn-print.ready {
+          animation: snap-pulse 2.4s infinite !important;
+        }
+        @keyframes snap-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+          50% { box-shadow: 0 0 0 8px rgba(26, 115, 232, 0); }
         }
         #snap-studocu-modal .snap-btn-close {
-          background: #444746 !important;
+          background: #3c4043 !important;
           color: #ffffff !important;
         }
         #snap-studocu-modal .snap-btn-close:hover {
-          background: #5e6260 !important;
+          background: #5f6368 !important;
         }
         #snap-studocu-modal .snap-modal-loading {
           display: flex !important;
@@ -484,25 +566,36 @@
           transition: width 0.2s !important;
         }
 
-        /* ── Modal Page Layout (Centered) ── */
+        /* ── Modal Page Layout (Centered & Infinitely Scrollable) ── */
         #snap-studocu-modal .snap-modal-pages {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           width: 100% !important;
-          padding: 20px 0 60px !important;
+          height: auto !important;
+          min-height: calc(100vh - 60px) !important;
+          padding: 24px 0 100px !important;
+          box-sizing: border-box !important;
+          overflow: visible !important;
         }
         #snap-studocu-modal .snap-modal-pages .p2hv {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           width: 100% !important;
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
           margin: 0 auto !important;
+          padding: 0 !important;
+          transform: none !important;
+          box-sizing: border-box !important;
         }
         #snap-studocu-modal .snap-modal-pages .pf {
-          margin: 16px auto !important;
+          margin: 18px auto !important;
           background: #ffffff !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+          box-shadow: 0 6px 30px rgba(0, 0, 0, 0.55) !important;
+          border-radius: 2px !important;
           display: block !important;
           filter: none !important;
           opacity: 1 !important;
@@ -702,11 +795,18 @@
       `;
       document.head.appendChild(dynamicStyle);
 
-      // Update button label with precise scale percentage
+      // Update button label and badge with precise scale and total count
       if (modalUI && modalUI.printBtn) {
         const pct = Math.round(scaleFactor * 100);
         const oriLabel = isLandscape ? "Khổ Ngang" : "Khổ Dọc";
         modalUI.printBtn.textContent = `🖨️ In / Lưu PDF (${oriLabel} • Fit ${pct}%)`;
+        modalUI.printBtn.disabled = false;
+        modalUI.printBtn.style.opacity = "1";
+        modalUI.printBtn.classList.add("ready");
+      }
+
+      if (modalUI && modalUI.pageBadge) {
+        modalUI.pageBadge.textContent = `📄 ${allPfs.length} trang`;
       }
     },
 
@@ -714,20 +814,37 @@
     createModal(title) {
       const modal = document.createElement("div");
       modal.id = "snap-studocu-modal";
+      modal.setAttribute("tabindex", "0");
 
       const bar = document.createElement("div");
       bar.className = "snap-modal-bar";
 
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "snap-modal-title-group";
+
+      const logo = document.createElement("span");
+      logo.className = "snap-badge-logo";
+      logo.textContent = "⚡ SnapDoc";
+
       const titleEl = document.createElement("div");
       titleEl.className = "snap-modal-title";
-      titleEl.textContent = `⚡ SnapDoc: ${title}`;
+      titleEl.textContent = title;
+      titleEl.setAttribute("title", title);
+
+      const pageBadge = document.createElement("span");
+      pageBadge.className = "snap-badge-count";
+      pageBadge.textContent = "Đang nạp...";
+
+      titleGroup.appendChild(logo);
+      titleGroup.appendChild(titleEl);
+      titleGroup.appendChild(pageBadge);
 
       const actions = document.createElement("div");
       actions.className = "snap-modal-actions";
 
       const printBtn = document.createElement("button");
       printBtn.className = "snap-btn-print";
-      printBtn.textContent = "🖨️ In / Lưu PDF";
+      printBtn.textContent = "⏳ Đang chuẩn bị...";
       printBtn.disabled = true;
       printBtn.style.opacity = "0.5";
       printBtn.addEventListener("click", () => window.print());
@@ -735,15 +852,43 @@
       const closeBtn = document.createElement("button");
       closeBtn.className = "snap-btn-close";
       closeBtn.textContent = "✕ Đóng";
-      closeBtn.addEventListener("click", () => {
+
+      const doClose = () => {
         modal.remove();
         const dynamicStyle = document.getElementById("snap-studocu-autoscale-style");
         if (dynamicStyle) dynamicStyle.remove();
+      };
+      closeBtn.addEventListener("click", doClose);
+
+      // Smooth mouse wheel handling preventing StuDocu hijack
+      modal.addEventListener("wheel", (e) => {
+        e.stopPropagation();
+        modal.scrollTop += e.deltaY;
+      }, { passive: false });
+
+      // Keyboard navigation support
+      modal.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        if (e.key === "Escape") {
+          doClose();
+        } else if (e.key === "ArrowDown") {
+          modal.scrollTop += 90;
+          e.preventDefault();
+        } else if (e.key === "ArrowUp") {
+          modal.scrollTop -= 90;
+          e.preventDefault();
+        } else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) {
+          modal.scrollTop += window.innerHeight * 0.85;
+          e.preventDefault();
+        } else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) {
+          modal.scrollTop -= window.innerHeight * 0.85;
+          e.preventDefault();
+        }
       });
 
       actions.appendChild(printBtn);
       actions.appendChild(closeBtn);
-      bar.appendChild(titleEl);
+      bar.appendChild(titleGroup);
       bar.appendChild(actions);
 
       const loading = document.createElement("div");
@@ -774,7 +919,7 @@
       modal.appendChild(loading);
       modal.appendChild(pages);
 
-      return { modal, fill, sub, loading, pages, printBtn };
+      return { modal, fill, sub, loading, pages, printBtn, pageBadge };
     },
 
     // ── Full Pipeline Execution ───────────────────────────────
@@ -797,6 +942,7 @@
         const pct = Math.round((done / total) * 60);
         modalUI.fill.style.width = `${pct}%`;
         modalUI.sub.textContent = `Đang thu thập và unblur trang ${done} / ${total}...`;
+        if (modalUI.pageBadge) modalUI.pageBadge.textContent = `${done}/${total} trang`;
         if (UI) UI.updateProgress(`Thu thập trang ${done} / ${total}`, pct);
       })
         .then(capturedPages => {
@@ -820,15 +966,12 @@
           // Step 4: Measure Page 1 & Apply Synchronized Autoscale across all pages
           this.applyAutoscale(container, modalUI);
 
-          modalUI.printBtn.disabled = false;
-          modalUI.printBtn.style.opacity = "1";
-
           if (UI) UI.hideProgress();
 
-          // Auto-trigger clean print
+          // Focus modal for immediate keyboard & wheel scrolling
           setTimeout(() => {
-            window.print();
-          }, 600);
+            modalUI.modal.focus();
+          }, 100);
         })
         .catch(err => {
           console.error("[SnapDoc] Pipeline failed:", err);
