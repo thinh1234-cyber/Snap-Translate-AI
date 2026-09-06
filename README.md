@@ -1,114 +1,85 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Logo" width="120">
+<img src="assets/icon.png" alt="Logo" width="100">
 
 # Snap Decode
 
-> Chrome Extension: Giải mã QR Code thông minh & Mở khóa tải tài liệu (Scribd, StuDocu, SlideShare)
+> Chrome Extension: Đọc mã QR thông minh & Tải tài liệu (Scribd, StuDocu, SlideShare)
 
 [![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Manifest](https://img.shields.io/badge/Manifest-V3-green.svg)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)
-[![Backend](https://img.shields.io/badge/Backend-Native_Messaging_%7C_OpenCV_%7C_PyZBar-green.svg)]()
 
-[Tính năng](#-tính-năng-cốt-lõi-core-features) • [Cài đặt & Kích hoạt](#-cài-đặt--kích-hoạt) • [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng) • [Lưu ý & Mẹo tối ưu](#-lưu-ý--mẹo-sử-dụng-tối-ưu) • [Cấu hình in ấn](#-cấu-hình-chrome-print-khi-lưu-pdf-chuẩn-cho-tất-cả-web)
+[Tính năng](#-tính-năng-chính) • [Cài đặt](#-cài-đặt) • [Cách dùng](#-hướng-dẫn-sử-dụng) • [Lưu ý](#-lưu-ý-quan-trọng) • [Cấu hình in](#-cấu-hình-in-pdf-chuẩn)
 
 </div>
 
 ---
 
-## 🎯 Tính năng cốt lõi (Core Features)
+## 🚀 Tính năng chính
 
-### 1. Smart QR & Barcode Engine (Siêu tốc & Zero-Touch)
-- **Khởi động & tắt ngầm tự động:** Không chiếm dụng RAM thường trực, snap xong tự giải phóng 100% tài nguyên hệ thống.
-- **Định vị vùng chứa QR (ROI Localization):** Tự động nhận diện và căn chỉnh góc quét mã QR ngay cả khi chụp toàn màn hình độ phân giải cao hoặc hậu cảnh phức tạp.
-- **Tốc độ vượt trội:** Thời gian giải mã cực nhanh chỉ **~30ms**.
-
-### 2. DocUnlocker — Mở khóa & Tải tài liệu (100% Client-side)
-- **Scribd Downloader:** 
-  - Tự động chuyển sang chế độ Clean Embed, bảo lưu đầy đủ vector font và nội dung gốc.
-  - Hỗ trợ tài liệu lớn (>60 - 100 trang) với pipeline nạp tuần tự, chống nghẽn socket/CDN.
-  - Tự động giải quyết ảnh nhúng qua token bảo mật và căn chỉnh tỷ lệ chuẩn A4 (không bị lệch lề, không cắt chữ, không chồng đè text).
-- **StuDocu Downloader & Unblur:** 
-  - Gỡ bỏ hoàn toàn lớp làm mờ CSS (`filter: blur`), xóa banner paywall, bỏ hạn chế bôi đen/copy.
-  - Mở khóa và nạp toàn bộ trang tài liệu trọn vẹn.
-- **SlideShare Downloader:** 
-  - Tự động quét và nâng cấp toàn bộ slide lên độ phân giải cao nhất **2048px** (`-2048.jpg`).
-  - Hỗ trợ cơ chế tải song song (Parallel Stream) cho các bài thuyết trình dài (>80 - 100 slide) với bố cục khổ ngang chuẩn xác.
-- **Nút nổi thông minh (Floating Button):** 
-  - Tự động hiển thị nút `⚡ Tải PDF Sạch` ngay góc dưới màn hình khi bạn truy cập Scribd, StuDocu hoặc SlideShare.
+1. **Đọc mã QR & Barcode siêu tốc:**
+   - Tự động bật/tắt engine nền (Native Messaging), không tốn RAM khi không dùng.
+   - Tự động nhận diện và định vị mã QR (ROI Localization) trong ~30ms.
+2. **Tải tài liệu PDF chất lượng cao (100% Client-side):**
+   - **Scribd:** Tự động chuyển link sạch, nạp 100% ảnh/vector, căn chuẩn khổ in A4 không lệch lề hay tràn trang.
+   - **StuDocu:** Gỡ bỏ hoàn toàn mờ (`blur`), xóa paywall và mở khóa toàn bộ trang.
+   - **SlideShare:** Tải toàn bộ slide độ phân giải gốc 2048px, tự động căn khổ ngang.
+   - **Nút nổi tiện lợi:** Tự động hiện nút `⚡ Tải PDF` ở góc màn hình khi duyệt tài liệu.
 
 ---
 
-## 📦 Cài đặt & Kích hoạt
+## 📦 Cài đặt
 
-### Bước 1: Kích hoạt tự động khởi động backend (Chỉ làm 1 lần duy nhất)
-Nhấp đúp file:
-```cmd
-setup_auto_backend.bat
-```
-*(Script sẽ tự động đăng ký liên kết Extension với Backend thông qua Chrome Native Messaging).*
-
-### Bước 2: Cài đặt Chrome Extension
-1. Mở trình duyệt Chrome, truy cập `chrome://extensions/`.
-2. Bật công tắc **Developer mode** ở góc trên bên phải.
-3. Nhấp **Load unpacked** và chọn thư mục `Snap-Translate-AI-main`.
-4. Bật tuỳ chọn *"Allow access to file URLs"* nếu bạn muốn quét QR trên các file PDF mở cục bộ.
+1. **Kích hoạt Backend (Làm 1 lần duy nhất):**  
+   Nhấp đúp file `setup_auto_backend.bat` để liên kết Extension với Backend.
+2. **Cài đặt vào Chrome:**
+   - Mở `chrome://extensions/` $\rightarrow$ Bật **Developer mode** (góc trên bên phải).
+   - Chọn **Load unpacked** $\rightarrow$ Trỏ tới thư mục dự án `Snap-Translate-AI-main`.
 
 ---
 
 ## 📖 Hướng dẫn sử dụng
 
-### 1. Quét Mã QR & Barcode (`Alt + X`)
-1. Bấm tổ hợp phím `Alt + X` (hoặc click icon Extension trên thanh công cụ → chọn **Snap Quét QR**).
-2. Kéo chuột chọn vùng chứa mã QR (vùng chụp có thể rộng hơn, hệ thống tự định vị chính xác mã).
-3. Kết quả giải mã hiển thị tức thì: tự động mở liên kết, cho phép **Copy** hoặc **Export .txt**.
+### 1. Quét mã QR
+- Nhấp icon Extension $\rightarrow$ Chọn **Quét QR** (hoặc dùng phím tắt).
+- Kéo chuột chọn vùng chứa mã trên màn hình $\rightarrow$ Kết quả hiển thị tức thì.
+- **Cấu hình phím tắt:** Truy cập `chrome://extensions/shortcuts` trên trình duyệt để gán phím tắt tùy ý (gợi ý: `Alt + X`).
 
-### 2. Tải Tài Liệu Scribd / StuDocu / SlideShare
-1. Truy cập trang tài liệu cần tải trên **Scribd**, **StuDocu** hoặc **SlideShare**.
-2. Nhấp nút nổi **⚡ Tải PDF Sạch** ở góc dưới bên phải màn hình (hoặc mở popup Extension bấm **Tải Tài Liệu**).
-3. Chờ thanh tiến trình quét nạp dữ liệu hoàn tất 100%, hộp thoại in của Chrome sẽ tự động xuất hiện.
-4. Chọn **Save as PDF** để lưu file về máy.
-
----
-
-## 💡 Lưu ý & Mẹo sử dụng tối ưu
-
-> [!TIP]
-> **Dành cho SlideShare:**
-> - Khi bạn đang xem một bài thuyết trình và chuyển sang một bài thuyết trình khác trong cùng tab (chuyển từ Presentation A sang B), hãy **F5 (Reload lại trang)** trước khi bấm nút tải. Thao tác này giúp Extension nạp sạch sẽ metadata và danh sách slide 2048px của bài mới, tránh dùng lại cache của bài trước.
-
-> [!TIP]
-> **Dành cho StuDocu:**
-> - Khi vừa mở một tài liệu mới, hãy **bấm nút `⚡ Tải PDF Sạch` ngay lập tức** mà không cần cuộn trang thủ công xuống dưới. Việc lướt sâu vào tài liệu trước có thể kích hoạt cơ chế đếm lượt xem và hiện pop-up bắt đăng ký gói Premium của StuDocu.
-> - Nếu chẳng may trang đã bị dính pop-up Premium chặn xem từ trước: Chỉ cần **mở link tài liệu đó trong Tab Ẩn danh (Incognito)** hoặc khởi động lại Chrome để tạo phiên (session) mới sạch sẽ là có thể bấm tải bình thường.
-
-> [!TIP]
-> **Dành cho Scribd:**
-> - Extension đã tự động xử lý chuyển sang link Embed sạch và nạp tuần tự từng nhóm trang. Bạn chỉ cần giữ nguyên tab cho đến khi thanh tiến trình chạy đến 100% và hộp thoại in xuất hiện.
+### 2. Tải tài liệu (Scribd / StuDocu / SlideShare)
+- Mở trang tài liệu cần tải.
+- Nhấp nút nổi **⚡ Tải PDF** ở góc dưới bên phải (hoặc mở popup Extension bấm **Tải Tài Liệu**).
+- Chờ tiến trình chạy 100%, hộp thoại in xuất hiện $\rightarrow$ Chọn **Save as PDF**.
 
 ---
 
-## ⚙️ Cấu hình Chrome Print khi Lưu PDF (Chuẩn cho tất cả Web)
+## 💡 Lưu ý quan trọng
 
-Để bản in PDF xuất ra đẹp nhất, không bị viền trắng thừa, căn giữa chuẩn xác và hiển thị đầy đủ 100% hình ảnh / sơ đồ / công thức, hãy thiết lập hộp thoại in của Chrome theo bảng chuẩn bên dưới:
+> [!TIP]
+> - **SlideShare:** Khi chuyển từ bài thuyết trình này sang bài khác trong cùng tab (slide $n \rightarrow n+1$), hãy **F5 (Reload lại trang)** trước khi bấm tải để nạp mới toàn bộ danh sách ảnh 2048px của bài mới.
+> - **StuDocu:** Khi vừa mở tài liệu, hãy **bấm nút `⚡ Tải PDF` ngay** mà không lướt trang xuống dưới để tránh web kích hoạt pop-up bắt mua gói Premium. Nếu lỡ bị chặn, chỉ cần **mở lại link trong Tab ẩn danh (Incognito)** là tải bình thường.
+> - **Scribd:** Giữ nguyên tab trong quá trình quét nạp cho đến khi hộp thoại in tự động mở ra.
+
+---
+
+## ⚙️ Cấu hình in PDF chuẩn
+
+Để tài liệu xuất ra đẹp nhất, không viền trắng thừa và sắc nét 100%:
 
 <div align="center">
-  <img src="assets/print_config_guide.png" alt="Cấu hình Chrome Print Chuẩn" width="620">
+  <img src="assets/print_config_guide.png" alt="Cấu hình Chrome Print" width="560">
 </div>
 
 <br>
 
-| Mục thiết lập | Giá trị chọn | Giải thích & Tác dụng |
+| Mục | Giá trị chọn | Ghi chú |
 |---|---|---|
-| **Destination** *(Máy in đích)* | **Save as PDF** | Xuất trực tiếp thành file tài liệu `.pdf`. |
-| **Pages** *(Trang)* | **All** | In toàn bộ các trang đã được mở khóa. |
-| **Layout** *(Bố cục)* | **Portrait** *(hoặc Landscape)* | Mặc định là **Portrait (Khổ dọc)**. Với slide thuyết trình như SlideShare, chọn `Landscape (Khổ ngang)`. |
-| **Paper size** *(Khổ giấy)* | **A4** | Khổ giấy in tiêu chuẩn quốc tế. |
-| **Pages per sheet** | **1** | 1 trang tài liệu trên mỗi mặt giấy. |
-| **Margins** *(Lề)* | **None** *(Không có)* | Loại bỏ lề trắng thừa của trình duyệt, tài liệu căn giữa tràn viền hoàn hảo. |
-| **Scale** *(Tỷ lệ)* | **Default** *(Mặc định)* | Thuật toán AutoFit của SnapDoc đã tự động căn chỉnh tỷ lệ tối ưu cho tài liệu. |
-| **Options** *(Tùy chọn)* | ✅ **Background graphics** | **BẮT BUỘC TÍCH CHỌN** để Chrome in đầy đủ ảnh nền HD, màu chữ, công thức và đồ họa. |
+| **Destination** | **Save as PDF** | Lưu file dạng `.pdf` |
+| **Pages** | **All** | In tất cả các trang |
+| **Layout** | **Portrait** *(hoặc Landscape)* | Dọc cho văn bản, Ngang cho SlideShare |
+| **Paper size** | **A4** | Khổ chuẩn quốc tế |
+| **Margins** | **None** | Tràn viền, loại bỏ lề trắng thừa |
+| **Scale** | **Default** | Tự động căn chỉnh vừa trang |
+| **Options** | ✅ **Background graphics** | **Bắt buộc tích** để hiển thị ảnh, màu và công thức |
 
-> [!NOTE]
-> **Trình duyệt tự ghi nhớ:** Chrome sẽ tự động ghi nhớ các tùy chọn này cho những lần in sau, bạn chỉ cần cấu hình chuẩn một lần duy nhất!
+*(Chrome sẽ tự động ghi nhớ cấu hình này cho các lần in sau).*
