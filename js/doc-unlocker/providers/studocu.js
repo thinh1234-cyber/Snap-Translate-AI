@@ -19,7 +19,7 @@
       // 1. Permanently inject CSS overrides
       this.injectStyles();
 
-      // 2. Start continuous cleanup loop to delete any paywall/clarification banners
+      // 2. Start continuous cleanup loop to delete any paywall/clarification banners & junk sections
       this.purgeBanners();
       cleanupTimer = setInterval(() => this.purgeBanners(), 250);
 
@@ -29,11 +29,26 @@
         this.revealAllPages();
         this.purgeBanners();
 
-        UI.updateProgress("Hoàn tất mở khóa 100%!", 100);
+        UI.updateProgress("Đang chuẩn bị bản in PDF sạch...", 90);
+
         setTimeout(() => {
           if (cleanupTimer) clearInterval(cleanupTimer);
           UI.hideProgress();
+
+          // Build isolated print stage containing ONLY the clean document pages
+          this.buildCleanPrintStage();
           this.injectPrintStyles();
+
+          // Listen for print completion to restore original view
+          window.addEventListener("afterprint", () => {
+            this.teardownPrintStage();
+          }, { once: true });
+
+          // Fallback cleanup if afterprint is cancelled or not fired
+          setTimeout(() => {
+            this.teardownPrintStage();
+          }, 45000);
+
           window.print();
         }, 800);
       });
@@ -46,7 +61,7 @@
       const style = document.createElement("style");
       style.id = "snap-studocu-core-style";
       style.innerHTML = `
-        /* 1. Force reveal all page contents (both vector text & image wrappers) */
+        /* 1. Force reveal all document page contents */
         .page-content,
         [class*="blurredImageWrapper"],
         [data-page-index],
@@ -76,7 +91,7 @@
           pointer-events: auto !important;
         }
 
-        /* 4. Completely eliminate Paywall Banners & Clarification Cards */
+        /* 4. Completely eliminate Paywall Banners, Clarification Cards & Junk Bottom Sections */
         [class*="InlineBanner"],
         [class*="PremiumPageClarificationBanner"],
         [class*="PremiumBanner"],
@@ -91,7 +106,19 @@
         div[class*="viewer-banner"], div[id*="banner"],
         div[class*="upsell"], div[class*="Upsell"],
         #premium-page-header,
-        #visible-content-bottom-section {
+        #visible-content-bottom-section,
+        [class*="bottomSectionWrapper"],
+        [class*="DocumentBottomSection"],
+        [class*="RatingSection"],
+        [class*="DocumentEndIndicator"],
+        [class*="RelatedDocuments"],
+        [class*="CourseSection"],
+        [class*="HorizontalDocumentCard"],
+        [class*="FloatingComponentsWrapper"],
+        [class*="TopFloatingComponent"],
+        [class*="BottomFloatingComponent"],
+        [class*="ViewerToolbar"],
+        #mobile-bottom-sheet-portal {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -106,9 +133,8 @@
       document.head.appendChild(style);
     },
 
-    // ── Direct DOM Purge for Banners & Overlays ────────────────
+    // ── Direct DOM Purge for Banners & Junk Overlays ───────────
     purgeBanners() {
-      // 1. Delete all known banner elements
       const bannerSelectors = [
         "[class*='InlineBanner']",
         "[class*='PremiumPageClarificationBanner']",
@@ -129,7 +155,13 @@
         "[class*='viewer-banner']",
         "[class*='upsell']",
         "[class*='Upsell']",
-        "#visible-content-bottom-section"
+        "#visible-content-bottom-section",
+        "[class*='bottomSectionWrapper']",
+        "[class*='DocumentBottomSection']",
+        "[class*='RatingSection']",
+        "[class*='DocumentEndIndicator']",
+        "[class*='RelatedDocuments']",
+        "[class*='CourseSection']"
       ];
 
       bannerSelectors.forEach(sel => {
@@ -142,7 +174,7 @@
         });
       });
 
-      // 2. Remove sticky/fixed modal overlays inside page container
+      // Remove sticky/fixed modal overlays inside page container
       const container = document.getElementById("page-container-wrapper") || document.getElementById("document-wrapper") || document.body;
       if (container) {
         container.querySelectorAll("div").forEach(div => {
@@ -158,7 +190,7 @@
         });
       }
 
-      // 3. Force inline display: block on all page contents & swap to HD images
+      // Force inline display: block on all page contents & swap to HD images
       this.revealAllPages();
     },
 
@@ -229,7 +261,7 @@
         this.purgeBanners();
 
         if (currentIdx >= pageElements.length && pageElements.length > 0) {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, 0); // Return to top of document
           onComplete();
           return;
         }
@@ -267,6 +299,88 @@
       step();
     },
 
+    // ── Build Clean Print Stage (100% Isolated From Web Clutter) ──
+    buildCleanPrintStage() {
+      this.teardownPrintStage();
+
+      const stage = document.createElement("div");
+      stage.id = "snap-clean-print-stage";
+
+      let pageElements = Array.from(
+        document.querySelectorAll("#page-container > [data-page-index]")
+      );
+      if (!pageElements.length) {
+        pageElements = Array.from(document.querySelectorAll("[data-page-index]"));
+      }
+      if (!pageElements.length) {
+        pageElements = Array.from(document.querySelectorAll(".pf"));
+      }
+
+      // Extract CloudFront Wildcard Signature from bg1.png
+      let bgTemplatePrefix = null;
+      let bgQueryString = "";
+      const allImgs = Array.from(document.querySelectorAll("img"));
+      for (const img of allImgs) {
+        const src = img.src || img.getAttribute("src") || "";
+        const match = src.match(/(.*\/)bg([0-9]+)\.png(\?.*)?$/);
+        if (match) {
+          bgTemplatePrefix = match[1];
+          bgQueryString = match[3] || "";
+          break;
+        }
+      }
+
+      pageElements.forEach((pageEl, idx) => {
+        const pf = pageEl.classList.contains("pf") ? pageEl : pageEl.querySelector(".pf");
+        const pageItem = document.createElement("div");
+        pageItem.className = "snap-page-item";
+
+        if (pf) {
+          const clonedPf = pf.cloneNode(true);
+
+          // Clean up cloned element from banners
+          clonedPf.querySelectorAll("[class*='ClarificationBanner'], [class*='Banner'], [class*='BlobWrapper']").forEach(b => b.remove());
+
+          // Force reveal contents
+          clonedPf.querySelectorAll("*").forEach(el => {
+            el.style.setProperty("filter", "none", "important");
+            el.style.setProperty("-webkit-filter", "none", "important");
+            el.style.setProperty("opacity", "1", "important");
+            if (el.classList.contains("page-content") || el.className.includes("blurredImageWrapper") || el.classList.contains("pc")) {
+              el.style.setProperty("display", "block", "important");
+              el.style.setProperty("visibility", "visible", "important");
+            }
+          });
+
+          // Ensure HD background image
+          const pageNum = idx + 1;
+          const img = clonedPf.querySelector("img");
+          if (img && bgTemplatePrefix) {
+            img.src = `${bgTemplatePrefix}bg${pageNum}.png${bgQueryString}`;
+            img.style.setProperty("filter", "none", "important");
+            img.style.setProperty("-webkit-filter", "none", "important");
+            img.style.setProperty("opacity", "1", "important");
+          }
+
+          pageItem.appendChild(clonedPf);
+        } else {
+          const cloned = pageEl.cloneNode(true);
+          pageItem.appendChild(cloned);
+        }
+
+        stage.appendChild(pageItem);
+      });
+
+      document.body.appendChild(stage);
+      document.body.classList.add("snap-printing-active");
+    },
+
+    teardownPrintStage() {
+      document.body.classList.remove("snap-printing-active");
+      const stage = document.getElementById("snap-clean-print-stage");
+      if (stage) stage.remove();
+    },
+
     // ── Print-to-PDF Stylesheet ───────────────────────────────
     injectPrintStyles() {
       if (document.getElementById("snap-studocu-print-style")) return;
@@ -275,45 +389,58 @@
       style.id = "snap-studocu-print-style";
       style.innerHTML = `
         @media print {
-          @page { size: auto; margin: 0; }
-          html, body {
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            height: auto !important;
+          @page {
+            size: auto;
+            margin: 0mm;
           }
-          #page-container-wrapper, #page-container, #document-wrapper, .document-wrapper {
+
+          /* 1. Hide 100% of website DOM elements during print */
+          body.snap-printing-active > *:not(#snap-clean-print-stage) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+
+          /* 2. Show only the isolated clean print stage */
+          #snap-clean-print-stage {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
             width: 100% !important;
-            max-width: 100% !important;
-            transform: none !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: #ffffff !important;
           }
-          #page-container > [data-page-index],
-          [data-page-index] {
+
+          #snap-clean-print-stage .snap-page-item {
             page-break-after: always !important;
             break-after: page !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+          }
+
+          #snap-clean-print-stage .pf {
+            margin: 0 auto !important;
             box-shadow: none !important;
             border: none !important;
-            margin: 0 auto !important;
-            width: 100% !important;
-            display: block !important;
-            visibility: visible !important;
-            height: auto !important;
+            transform: none !important;
+            position: relative !important;
           }
-          .page-content,
-          [class*="blurredImageWrapper"],
-          .pf, .pc {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+
+          #snap-clean-print-stage img {
             filter: none !important;
-          }
-          img {
-            filter: none !important;
+            -webkit-filter: none !important;
             opacity: 1 !important;
           }
+
+          /* Extra safety fallback: hide all junk overlays unconditionally */
           nav, header, footer, aside, .sidebar, #sidebar, [class*="sidebar"],
           [class*="InlineBanner"],
           [class*="PremiumPageClarificationBanner"],
@@ -321,6 +448,12 @@
           [class*="isFloating"], [class*="overflowWrapper"], [class*="blobContainer"],
           [class*="Shapes"], [class*="paywall"],
           #visible-content-bottom-section,
+          [class*="bottomSectionWrapper"],
+          [class*="DocumentBottomSection"],
+          [class*="RatingSection"],
+          [class*="DocumentEndIndicator"],
+          [class*="RelatedDocuments"],
+          [class*="CourseSection"],
           #snap-doc-floating-btn, #snap-doc-overlay {
             display: none !important;
           }
