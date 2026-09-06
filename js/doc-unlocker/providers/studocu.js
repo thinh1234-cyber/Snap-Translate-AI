@@ -46,10 +46,10 @@
       const style = document.createElement("style");
       style.id = "snap-studocu-core-style";
       style.innerHTML = `
-        /* 1. Force reveal all hidden page contents */
-        .page-content,
-        [data-page-index] .page-content,
-        .pf .page-content,
+        /* 1. Force reveal ONLY real hidden page contents */
+        .page-content:not([class*="blurredImageWrapper"]),
+        [data-page-index] .page-content:not([class*="blurredImageWrapper"]),
+        .pf .page-content:not([class*="blurredImageWrapper"]),
         .pc {
           display: block !important;
           visibility: visible !important;
@@ -57,22 +57,39 @@
           height: auto !important;
         }
 
-        /* 2. Strip all blur filters */
+        /* 2. Completely eliminate the fake blurred image wrapper & blurred webp placeholder */
+        [class*="blurredImageWrapper"],
+        .page-content[class*="blurredImageWrapper"],
+        img[alt*="blurred_content"],
+        img[src*="/pages/blurred/"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          max-height: 0 !important;
+          overflow: hidden !important;
+          pointer-events: none !important;
+          position: absolute !important;
+          top: -9999px !important;
+        }
+
+        /* 3. Strip all blur filters */
         div, p, span, img, section, article,
-        .blurred-page, [class*="blurred"], [class*="blur-"], [style*="filter: blur"] {
+        .blurred-page, [class*="blurred"]:not([class*="blurredImageWrapper"]),
+        [class*="blur-"], [style*="filter: blur"] {
           filter: none !important;
           -webkit-filter: none !important;
           opacity: 1 !important;
         }
 
-        /* 3. Re-enable user text selection */
+        /* 4. Re-enable user text selection */
         html, body, div, p, span, * {
           user-select: auto !important;
           -webkit-user-select: auto !important;
           pointer-events: auto !important;
         }
 
-        /* 4. Completely eliminate the Premium Banner overlay */
+        /* 5. Completely eliminate the Premium Banner overlay */
         [class*="PremiumBanner"],
         [class*="BlobWrapper"],
         [class*="overflowWrapper"],
@@ -101,8 +118,11 @@
 
     // ── Direct DOM Purge for Banners & Overlays ────────────────
     purgeBanners() {
-      // 1. Delete all known banner classes (matching temp.txt findings)
+      // 1. Delete all known banner & fake blur elements (matching temp.txt findings)
       const bannerSelectors = [
+        "[class*='blurredImageWrapper']",
+        "img[alt*='blurred_content']",
+        "img[src*='/pages/blurred/']",
         "[class*='PremiumBanner']",
         "[class*='BlobWrapper']",
         "[class*='previewBanner']",
@@ -148,18 +168,22 @@
         });
       }
 
-      // 3. Force inline display: block on all .page-content
+      // 3. Force inline display: block on all genuine .page-content
       this.revealAllPages();
     },
 
     revealAllPages() {
       document.querySelectorAll(".page-content").forEach(el => {
+        if (el.className && el.className.includes("blurredImageWrapper")) {
+          el.remove();
+          return;
+        }
         el.style.setProperty("display", "block", "important");
         el.style.setProperty("visibility", "visible", "important");
         el.style.setProperty("opacity", "1", "important");
       });
 
-      // Swap any blurred image URLs to original bg{N}.png
+      // Swap any blurred image URLs to original bg{N}.png if present
       let bgTemplate = null;
       const allImgs = Array.from(document.querySelectorAll("img"));
 
@@ -204,10 +228,16 @@
           const el = pageElements[currentIdx];
           el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-          // Ensure child page-content is visible
-          const content = el.querySelector(".page-content");
+          // Ensure child real page-content is visible
+          const content = el.querySelector(".page-content:not([class*='blurredImageWrapper'])");
           if (content) {
             content.style.setProperty("display", "block", "important");
+          }
+
+          // Remove any blurred wrapper immediately if encountered
+          const blurEl = el.querySelector("[class*='blurredImageWrapper']");
+          if (blurEl) {
+            blurEl.remove();
           }
 
           currentIdx++;
@@ -262,11 +292,14 @@
             margin: 0 auto !important;
             width: 100% !important;
           }
-          .page-content, .pc {
+          .page-content:not([class*="blurredImageWrapper"]), .pc {
             display: block !important;
             visibility: visible !important;
           }
           nav, header, footer, aside, .sidebar, #sidebar, [class*="sidebar"],
+          [class*="blurredImageWrapper"],
+          img[alt*="blurred_content"],
+          img[src*="/pages/blurred/"],
           [class*="PremiumBanner"], [class*="BlobWrapper"], [class*="previewBanner"],
           [class*="isFloating"], [class*="overflowWrapper"], [class*="blobContainer"],
           [class*="Shapes"], [class*="paywall"],
