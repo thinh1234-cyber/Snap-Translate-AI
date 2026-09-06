@@ -145,7 +145,7 @@
             totalSlides = Number(count);
             break;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (!totalSlides) {
