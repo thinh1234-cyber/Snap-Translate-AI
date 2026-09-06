@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="snap-guide-step" data-step="1">
           <div class="snap-guide-icon">📷</div>
           <h3>Bước 1: Snap Quét Mã QR</h3>
-          <p>Nhấn <b>Alt+X</b> hoặc click nút Snap Quét QR, sau đó kéo chuột chọn vùng chứa mã QR (hoặc VietQR ngân hàng) để giải mã tức thì.</p>
+          <p>Nhấn <b>Alt+X</b> hoặc click nút Snap Quét QR, sau đó kéo chuột chọn vùng chứa mã QR để giải mã tức thì.</p>
         </div>
         <div class="snap-guide-step" data-step="2" style="display:none;">
           <div class="snap-guide-icon">📄</div>
