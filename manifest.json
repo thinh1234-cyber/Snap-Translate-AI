@@ -37,6 +37,16 @@
       "description": "Kích hoạt Snap quét QR Code"
     }
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.scribd.com/*",
+        "*://*.studocu.com/*"
+      ],
+      "js": ["js/doc-inject.js"],
+      "run_at": "document_end"
+    }
+  ],
   "options_page": "html/options.html",
   "web_accessible_resources": [
     {

@@ -68,9 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
     docsBtn.addEventListener("click", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "TRIGGER_DOC_DOWNLOAD" }, (resp) => {
-            if (chrome.runtime.lastError || !resp) {
-              alert("Hãy mở trang Scribd hoặc Studocu trước khi bấm Tải tài liệu!");
+          chrome.runtime.sendMessage({ action: "START_DOC_DOWNLOAD", tab: tabs[0] }, (resp) => {
+            if (resp && resp.error) {
+              alert(resp.error);
+            } else {
+              window.close();
             }
           });
         }

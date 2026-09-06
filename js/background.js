@@ -74,6 +74,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case "START_DOC_DOWNLOAD": {
+      const tab = request.tab;
+      if (!tab || !tab.url) {
+        sendResponse({ success: false, error: "Không tìm thấy thông tin tab." });
+        return true;
+      }
+
+      const url = tab.url;
+      if (url.includes("scribd.com")) {
+        const match = url.match(/\/(?:document|doc)\/(\d+)/);
+        if (match && !url.includes("/embeds/")) {
+          const docId = match[1];
+          const embedUrl = `https://www.scribd.com/embeds/${docId}/content?start_page=1&view_mode=scroll#snap_autodownload=1`;
+          chrome.tabs.create({ url: embedUrl });
+          sendResponse({ success: true, redirect: true });
+        } else {
+          chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_DOC_DOWNLOAD" }, () => {
+            sendResponse({ success: true });
+          });
+        }
+      } else if (url.includes("studocu.com")) {
+        chrome.tabs.sendMessage(tab.id, { action: "TRIGGER_DOC_DOWNLOAD" }, () => {
+          sendResponse({ success: true });
+        });
+      } else {
+        sendResponse({
+          success: false,
+          error: "Trang hiện tại không phải Scribd hoặc StuDocu!\nHãy mở trang tài liệu cần tải trước."
+        });
+      }
+      return true;
+    }
+
     case "OPEN_OPTIONS":
       if (chrome.runtime.openOptionsPage) {
         chrome.runtime.openOptionsPage();
