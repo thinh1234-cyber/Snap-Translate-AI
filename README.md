@@ -118,6 +118,6 @@ Nếu **Snap Decode** giúp ích cho việc học tập và nghiên cứu của 
 <img src="assets/QR_stknh.jpg" alt="Ủng hộ tác giả" width="160" style="border-radius: 8px;">
 
 <br>
-<sub><i>Cảm ơn sự đồng hành và ủng hộ của bạn! ❤️</i></sub>
-
+<div align="center">
+<p>Made with ❤️ by <b>Nguyễn Thịnh - Kyle</b></p>
 </div>
