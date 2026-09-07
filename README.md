@@ -41,7 +41,7 @@
    `chrome://extensions/`
 2. Bật công tắc **Developer mode** *(Chế độ cho nhà phát triển)* ở góc trên cùng bên phải màn hình.
 3. Nhấp vào nút **Load unpacked** *(Tải tiện ích đã giải nén)* ở góc trên bên trái.
-4. Trỏ và chọn thư mục gốc của dự án `Snap-Translate-AI-main`.
+4. Trỏ và chọn thư mục gốc của dự án `Snap-Decode`.
 5. Sau khi cài xong, bạn nên nhấp vào biểu tượng **Mảnh ghép** (Extensions) trên thanh công cụ của Chrome và chọn **Ghim (Pin)** icon Snap Decode lên thanh trình duyệt để thao tác nhanh hơn.
 
 ---
